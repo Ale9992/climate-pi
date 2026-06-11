@@ -1,116 +1,116 @@
 # 🌡️ Climate Automation
 
-**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+[🇮🇹 Italiano](README.it.md) · **🇬🇧 English**
 
-Sistema di **domotica climatica self-hosted** che governa automaticamente i
-condizionatori **Panasonic** in base a temperatura, umidità, stagione e
-**presenza** delle persone in casa — con dashboard web in stile iOS e controllo
-delle **luci IKEA**.
+A **self-hosted home climate automation** system that automatically controls
+**Panasonic** air conditioners based on temperature, humidity, season and
+**presence**, with an iOS-style web dashboard and **IKEA light** control.
 
-Pensato per girare 24/7 su un **Raspberry Pi**, senza cloud di terze parti oltre
-a quelli dei produttori, senza app proprietarie.
+Designed to run 24/7 on a **Raspberry Pi**, with no third-party cloud beyond the
+manufacturers' own, and no proprietary apps.
 
 ```
-Sensori IKEA Dirigera ──┐
-Stato AC Panasonic ─────┼──► Rule Engine ──► comanda gli AC (Cool/Heat/Dry…)
-Presenza FRITZ!Box ─────┘                └──► Dashboard web (React)
-Luci IKEA Dirigera ─────────────────────────► controllo on/off + dimmer
+IKEA Dirigera sensors ──┐
+Panasonic AC state ─────┼──► Rule Engine ──► commands the ACs (Cool/Heat/Dry…)
+FRITZ!Box presence ─────┘                └──► Web dashboard (React)
+IKEA Dirigera lights ───────────────────────► on/off + dimmer control
 ```
 
-> ⚠️ Progetto personale, pubblicato a scopo didattico. Dipende da hardware
-> specifico (vedi *Requisiti*). Non è un prodotto commerciale.
+> ⚠️ Personal project, published for educational purposes. It depends on specific
+> hardware (see *Requirements*). Not a commercial product.
 
 ---
 
-## ✨ Funzionalità
+## ✨ Features
 
-### Automazione climatica intelligente
-- **Modello comfort-band**: mantiene la temperatura entro una banda attorno a un
-  target, accendendo/spegnendo l'AC con **isteresi** (niente cicli continui).
-  Soglie calibrate sullo storico consumi reale.
-- **Consapevolezza stagionale**: la stagione è decisa dalla **media mobile della
-  temperatura esterna** (letta dagli AC), così d'estate non parte mai il
-  riscaldamento e viceversa — con sblocco di sicurezza per condizioni estreme.
-- **Deumidificazione automatica**: passa in modalità Dry quando l'umidità supera
-  una soglia (consuma poco, migliora il comfort).
-- **Spegnimento forzato + fascia notturna**: gli AC restano spenti in una fascia
-  oraria configurabile (es. 03:00–08:00), anche se fa caldo.
+### Smart climate automation
+- **Comfort-band model**: keeps the temperature within a band around a target,
+  switching the AC on/off with **hysteresis** (no rapid cycling). Thresholds
+  calibrated on real consumption history.
+- **Season awareness**: the season is decided by the **moving average of the
+  outdoor temperature** (read from the ACs), so heating never kicks in during
+  summer and vice versa — with a safety override for extreme conditions.
+- **Automatic dehumidification**: switches to Dry mode when humidity rises above
+  a threshold (low power, better comfort).
+- **Forced off + night window**: ACs stay off during a configurable time window
+  (e.g. 03:00–08:00), even when it's hot.
 
-### Presenza (FRITZ!Box, senza app sul telefono)
-- **Casa vuota → spegne tutto**: rileva se gli smartphone sono connessi al WiFi
-  (via TR-064); dopo un *grace period* senza nessuno, spegne i condizionatori.
-- **Presenza per-persona**: una stanza può seguire **uno specifico telefono**
-  (es. la camera segue solo il tuo iPhone).
-- **Fail-safe**: se il FRITZ!Box non risponde, assume "casa abitata" — un errore
-  di rete non toglie mai il comfort.
+### Presence (FRITZ!Box, no app on the phone)
+- **Empty home → everything off**: detects whether smartphones are connected to
+  WiFi (via TR-064); after a *grace period* with nobody home, it turns the ACs
+  off.
+- **Per-person presence**: a room can follow **a specific phone** (e.g. the
+  bedroom follows only your iPhone).
+- **Fail-safe**: if the FRITZ!Box doesn't respond, it assumes "home occupied" —
+  a network error never takes comfort away.
 
-### Convivenza col mondo reale
-- **Rileva il telecomando**: se accendi/spegni l'AC dal telecomando o dall'app
-  Panasonic, il sistema se ne accorge e **rispetta la scelta** (non "combatte").
-- **Ripresa dopo black-out**: al riavvio legge lo stato reale degli AC e riprende
-  coerentemente; il Pi si riaccende da solo al ritorno della corrente.
+### Living with the real world
+- **Remote-control aware**: if you turn the AC on/off via the remote or the
+  Panasonic app, the system notices and **respects your choice** (it doesn't
+  "fight" you).
+- **Recovery after a blackout**: on restart it reads the real AC state and
+  resumes consistently; the Pi powers back on by itself when power returns.
 
-### Luci IKEA
-- Controllo **on/off + dimmer** delle luci Dirigera, raggruppate per stanza.
-- **Plafoniere**: più lampadine che formano un'unica plafoniera vengono comandate
-  insieme come un solo controllo (configurabile per stanza).
+### IKEA lights
+- **On/off + dimmer** control of Dirigera lights, grouped by room.
+- **Ceiling lights**: multiple bulbs forming a single fixture are controlled
+  together as one control (configurable per room).
 
-### Dashboard web
-- Interfaccia **React** responsive in stile *glassmorphism / iOS*, navigazione
-  per stanza, controllo termostato (modalità, ventola, swing, nanoe™X, Powerful/
-  Quiet), luci, grafici storici di temperatura/umidità, consumi.
-- Servita dallo stesso processo backend, raggiungibile da tutta la rete locale.
+### Web dashboard
+- A responsive **React** interface in *glassmorphism / iOS* style, room-by-room
+  navigation, thermostat control (mode, fan, swing, nanoe™X, Powerful/Quiet),
+  lights, temperature/humidity history charts, energy consumption.
+- Served by the same backend process, reachable from the whole local network.
 
 ---
 
-## 🧰 Stack tecnico
+## 🧰 Tech stack
 
-| Livello | Tecnologia |
+| Layer | Technology |
 |---|---|
 | Backend | Python 3.11+ (asyncio), FastAPI + Uvicorn |
-| Persistenza | SQLite (async, `aiosqlite`) |
+| Storage | SQLite (async, `aiosqlite`) |
 | Scheduling | APScheduler |
-| Integrazioni | `dirigera` (IKEA), `aio-panasonic-comfort-cloud`, `fritzconnection` |
+| Integrations | `dirigera` (IKEA), `aio-panasonic-comfort-cloud`, `fritzconnection` |
 | Frontend | React 18 + Vite + Tailwind CSS v4, Material Design Icons |
-| Deploy | systemd su Raspberry Pi OS / Debian |
+| Deploy | systemd on Raspberry Pi OS / Debian |
 
 ---
 
-## 🔌 Requisiti hardware
+## 🔌 Hardware requirements
 
-- **Hub IKEA DIRIGERA** (sensori ambiente VINDSTYRKA, luci) — API locale
-- **Condizionatori Panasonic** compatibili **Comfort Cloud** (es. serie CS-TZ)
-- **FRITZ!Box** (per il rilevamento presenza via TR-064) — opzionale
-- Un host che gira 24/7: **Raspberry Pi 3** o superiore (testato), o qualsiasi
-  Linux/macOS per lo sviluppo
+- **IKEA DIRIGERA hub** (VINDSTYRKA environment sensors, lights) — local API
+- **Panasonic ACs** compatible with **Comfort Cloud** (e.g. CS-TZ series)
+- **FRITZ!Box** (for presence detection via TR-064) — optional
+- A host running 24/7: **Raspberry Pi 3** or newer (tested), or any Linux/macOS
+  machine for development
 
-> Senza tutti i componenti il sistema funziona comunque in modo ridotto (es.
-> senza FRITZ!Box la presenza è disattivata, senza luci IKEA la relativa card
-> non compare).
+> Without all components the system still works in reduced mode (e.g. no
+> FRITZ!Box → presence disabled, no IKEA lights → the lights card doesn't appear).
 
 ---
 
-## 🚀 Installazione
+## 🚀 Installation
 
-### 1. Configurazione
+### 1. Configuration
 
-Le credenziali **non** sono nel repository. Copia il template e inserisci i tuoi dati:
+Credentials are **not** in the repository. Copy the template and fill in your data:
 
 ```bash
 cp config/config.example.yaml config/config.yaml
 ```
 
-Poi modifica `config/config.yaml`:
-- **token Dirigera** — generato automaticamente dal mapping tool (passo 2)
-- **email/password Panasonic Comfort Cloud**
-- **credenziali FRITZ!Box** — crea un utente dedicato in *Sistema → Utenti*
-- **ID dei device** (AC, sensori IKEA) — popolati dal mapping tool
+Then edit `config/config.yaml`:
+- **Dirigera token** — generated automatically by the mapping tool (step 2)
+- **Panasonic Comfort Cloud email/password**
+- **FRITZ!Box credentials** — create a dedicated user in *System → Users*
+- **Device IDs** (ACs, IKEA sensors) — populated by the mapping tool
 
-`config/config.yaml` è in `.gitignore`: i segreti non finiscono mai su Git.
+`config/config.yaml` is in `.gitignore`: secrets never end up on Git.
 
-### 2. Mappatura hardware
+### 2. Hardware mapping
 
-Lo strumento interattivo scopre i tuoi device e popola il config:
+The interactive tool discovers your devices and populates the config:
 
 ```bash
 python3 -m venv .venv
@@ -118,60 +118,60 @@ python3 -m venv .venv
 .venv/bin/python tools/mapping_tool.py
 ```
 
-(Per la prima autenticazione all'hub Dirigera dovrai premere il pulsante fisico.)
+(For the first authentication to the Dirigera hub you'll need to press its
+physical button.)
 
-### 3. Build dashboard + avvio
+### 3. Build dashboard + run
 
 ```bash
-# build della dashboard (richiede Node.js)
+# build the dashboard (requires Node.js)
 cd dashboard && npm install && npm run build && cd ..
 
-# avvio
-.venv/bin/python main.py          # produzione
-DEV=1 .venv/bin/python main.py    # log verbosi
+# run
+.venv/bin/python main.py          # production
+DEV=1 .venv/bin/python main.py    # verbose logs
 ```
 
-Dashboard e API su **http://localhost:8000**.
+Dashboard and API at **http://localhost:8000**.
 
-### 4. Deploy su Raspberry Pi (24/7)
+### 4. Deploy on Raspberry Pi (24/7)
 
-Lo script `setup.sh` crea il venv, builda la dashboard (se Node è presente) e
-installa il servizio systemd:
+The `setup.sh` script creates the venv, builds the dashboard (if Node is present)
+and installs the systemd service:
 
 ```bash
 ./setup.sh
 ```
 
-Comandi utili:
+Useful commands:
 ```bash
-sudo systemctl status climate-automation     # stato
-journalctl -u climate-automation -f          # log live
-sudo systemctl restart climate-automation    # riavvio
+sudo systemctl status climate-automation     # status
+journalctl -u climate-automation -f          # live logs
+sudo systemctl restart climate-automation    # restart
 ```
 
-Il servizio è `enabled`: riparte da solo a ogni boot, crash o black-out.
+The service is `enabled`: it restarts itself on every boot, crash or blackout.
 
-> **Nota Pi headless**: la build React può esaurire la RAM su un Pi 3. Conviene
-> buildare la `dashboard/dist/` su un'altra macchina e copiarla, evitando `npm`
-> sul Pi.
+> **Headless Pi note**: the React build can exhaust RAM on a Pi 3. It's best to
+> build `dashboard/dist/` on another machine and copy it, avoiding `npm` on the Pi.
 
 ---
 
-## ⚙️ Configurazione principale (`config.yaml`)
+## ⚙️ Main configuration (`config.yaml`)
 
 ```yaml
 rooms:
-  - name: "Camera"
-    ikea_sensor_id: "<SENSOR_ID>"        # sensore ambiente IKEA (opzionale)
-    panasonic_device_id: "<DEVICE_ID>"   # condizionatore
-    presence_device_ip: "192.168.1.50"   # opz: questa stanza segue questo telefono
+  - name: "Bedroom"
+    ikea_sensor_id: "<SENSOR_ID>"        # IKEA environment sensor (optional)
+    panasonic_device_id: "<DEVICE_ID>"   # air conditioner
+    presence_device_ip: "192.168.1.50"   # opt: this room follows this phone
     comfort:
       summer: { target_temp: 25, deadband: 1.5, setpoint: 25 }
       winter: { target_temp: 21.5, deadband: 1.0, setpoint: 21 }
 
 schedule:
-  force_off_time: "03:00"   # inizio fascia notturna
-  night_off_end: "08:00"    # fine fascia: AC spenti 03:00–08:00
+  force_off_time: "03:00"   # start of the night window
+  night_off_end: "08:00"    # end of window: ACs off 03:00–08:00
 
 presence:
   enabled: true
@@ -180,65 +180,65 @@ presence:
   devices: [ { name, ip, mac } ]
 
 lights:
-  ceiling_rooms: ["Salotto", "Camera"]  # luci comandate come unica plafoniera
+  ceiling_rooms: ["Living room", "Bedroom"]  # bulbs controlled as one fixture
 ```
 
-Il template completo e commentato è in [`config/config.example.yaml`](config/config.example.yaml).
+The full, commented template is in [`config/config.example.yaml`](config/config.example.yaml).
 
 ---
 
-## 🗂️ Struttura
+## 🗂️ Project structure
 
 ```
 climate-automation/
-├── main.py                 # entry point: orchestrazione asyncio + uvicorn
+├── main.py                 # entry point: asyncio orchestration + uvicorn
 ├── core/
-│   ├── config.py           # caricamento config tipizzato
-│   ├── rule_engine.py      # cuore: decide e comanda gli AC
-│   ├── ac_controller.py    # wrapper async Panasonic Comfort Cloud
-│   ├── sensor_poller.py    # lettura sensori IKEA (WebSocket + polling)
-│   ├── season.py           # algoritmo stagionale (media mobile T esterna)
-│   ├── presence.py         # presenza casa/persona via FRITZ!Box
-│   ├── light_controller.py # luci IKEA (+ plafoniere)
-│   └── scheduler.py        # spegnimento forzato notturno
-├── api/                    # FastAPI: routes + modelli
-├── db/                     # SQLite async (storico, log, comandi)
-├── dashboard/              # frontend React + Vite + Tailwind
-├── tools/mapping_tool.py   # discovery hardware + generazione config
-├── setup.sh                # installazione + servizio systemd
-└── docs/                   # analisi e note tecniche
+│   ├── config.py           # typed config loading
+│   ├── rule_engine.py      # the brain: decides and commands the ACs
+│   ├── ac_controller.py    # async wrapper over Panasonic Comfort Cloud
+│   ├── sensor_poller.py    # IKEA sensor reading (WebSocket + polling)
+│   ├── season.py           # season algorithm (outdoor temp moving average)
+│   ├── presence.py         # home/person presence via FRITZ!Box
+│   ├── light_controller.py # IKEA lights (+ ceiling fixtures)
+│   └── scheduler.py        # nightly forced off
+├── api/                    # FastAPI: routes + models
+├── db/                     # async SQLite (history, logs, commands)
+├── dashboard/              # React + Vite + Tailwind frontend
+├── tools/mapping_tool.py   # hardware discovery + config generation
+├── setup.sh                # install + systemd service
+└── docs/                   # analysis and technical notes
 ```
 
 ---
 
-## 🌐 API REST (estratto)
+## 🌐 REST API (excerpt)
 
-| Metodo | Endpoint | Descrizione |
+| Method | Endpoint | Description |
 |---|---|---|
-| `GET` | `/api/rooms` | stato di tutte le stanze (temp, AC, energia, override) |
-| `GET` | `/api/status` | connessioni, stagione, presenza |
-| `POST` | `/api/rooms/{room}/ac/control` | controllo diretto AC (modo/temp/ventola/swing/nanoe/eco) |
-| `GET` | `/api/rooms/{room}/history` | storico letture sensore |
-| `GET` | `/api/lights` | luci raggruppate per stanza |
-| `POST` | `/api/lights/{id}` | on/off + dimmer di una luce/plafoniera |
-| `GET` | `/api/logs` | log delle decisioni di automazione |
+| `GET` | `/api/rooms` | state of all rooms (temp, AC, energy, override) |
+| `GET` | `/api/status` | connections, season, presence |
+| `POST` | `/api/rooms/{room}/ac/control` | direct AC control (mode/temp/fan/swing/nanoe/eco) |
+| `GET` | `/api/rooms/{room}/history` | sensor reading history |
+| `GET` | `/api/lights` | lights grouped by room |
+| `POST` | `/api/lights/{id}` | on/off + dimmer of a light/fixture |
+| `GET` | `/api/logs` | automation decision logs |
 
 ---
 
-## 🔐 Privacy & sicurezza
+## 🔐 Privacy & security
 
-- Tutte le credenziali stanno **solo** in `config/config.yaml`, **gitignorato**.
-- Nessun dato lascia la rete locale, salvo le API ufficiali dei produttori
+- All credentials live **only** in `config/config.yaml`, which is **gitignored**.
+- No data leaves the local network, except the manufacturers' official APIs
   (Panasonic Comfort Cloud).
-- La dashboard è **senza autenticazione**: esponila solo sulla LAN, **mai**
-  direttamente su Internet (per l'accesso da fuori usa una VPN).
+- The dashboard has **no authentication**: expose it on the LAN only, **never**
+  directly on the Internet (use a VPN for remote access).
 
 ---
 
-## 📄 Licenza
+## 📄 License
 
-MIT — vedi [`LICENSE`](LICENSE).
+MIT — see [`LICENSE`](LICENSE).
 
 ---
 
-<sub>Costruito con cura per una casa che si gestisce da sola. 🏠</sub>
+<sub>Built with care for a home that runs itself. 🏠</sub>
