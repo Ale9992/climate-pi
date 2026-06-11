@@ -1,0 +1,37 @@
+# Python
+.venv/
+__pycache__/
+*.pyc
+
+# Database e log (runtime)
+db/*.db
+db/*.db-wal
+db/*.db-shm
+logs/
+
+# Segreti / credenziali generate dal mapping tool
+config/.dirigera_token
+config/config.yaml
+config/*.bak_*
+
+# Dashboard
+dashboard/node_modules/
+dashboard/dist/
+
+# OS
+.DS_Store
+
+# --- Sicurezza extra (pubblicazione) ---
+# Tutti i config tranne il template di esempio
+config/*.yaml
+!config/config.example.yaml
+# Backup e file temporanei
+*.bak
+*.bak_*
+*.legacy.*
+.panasonic-settings
+# Eventuali credenziali/segreti
+*.token
+*.key
+.env
+.env.*

@@ -1,0 +1,193 @@
+# config.example.yaml — TEMPLATE.
+# Copia in config/config.yaml e inserisci le TUE credenziali/ID.
+# I valori <...> vanno sostituiti. config.yaml è gitignorato (mai pubblicato).
+
+
+dirigera:
+  ip_address: "192.168.1.10"  # IP del tuo hub Dirigera
+  token: "<IL_TUO_TOKEN_DIRIGERA>"  # generato dal mapping_tool
+
+panasonic:
+  username: "<TUA_EMAIL_PANASONIC>"
+  password: "<PASSWORD_PANASONIC>"
+
+rooms:
+  - name: "Stanza da letto"
+    ikea_sensor_id: "<SENSOR_ID_IKEA>"  # Sensore Aria
+    panasonic_device_id: "<DEVICE_ID_AC>"  # Camerina
+    presence_device_ip: "192.168.1.50"  # il telefono che governa questa stanza
+    # Modello COMFORT-BAND (energy-aware, con spegnimento automatico).
+    # Se presente, ha PRECEDENZA sulle 'rules' legacy sotto. Soglie calibrate
+    # sullo storico consumi Panasonic (vedi docs/analisi_stagionale.md).
+    comfort:
+      summer:                    # ESTATE: accende a target+deadband, spegne a target-deadband
+        target_temp: 25          # comfort 25°C (scelta utente: 24 era troppo)
+        deadband: 1.5            # ON sopra 26.5°C, OFF sotto 23.5°C
+        setpoint: 25             # l'AC raffredda a 25°C
+        fan_speed: Auto
+        boost_temp: 29           # se T.interna >= 29°C -> raffredda piu' forte
+        boost_setpoint: 22
+        humidity_dry_threshold: 70  # se umidita' > 70% -> modalita' Dry
+        dry_fan: Low
+      winter:                    # INVERNO: speculare
+        target_temp: 21.5        # comfort ~21-22°C (scelta utente)
+        deadband: 1.0            # ON sotto 20.5°C, OFF sopra 22.5°C
+        setpoint: 21
+        fan_speed: Auto
+        boost_temp: 17           # se T.interna <= 17°C -> riscalda piu' forte
+        boost_setpoint: 23
+    rules:
+      # [LEGACY - ignorate se 'comfort' e' presente] Regole in ordine: scatta
+      # la PRIMA il cui 'condition' e' vero. Piu' condizioni = AND logico.
+      - condition:
+          temp_gt: 26
+          humidity_gt: 60
+        action:
+          power: on
+          mode: Cool
+          temperature: 24
+          fan_speed: Auto
+      - condition:
+          temp_gt: 28
+        action:
+          power: on
+          mode: Cool
+          temperature: 22
+          fan_speed: Mid
+      - condition:
+          humidity_gt: 75
+        action:
+          power: on
+          mode: Dry
+          fan_speed: Low
+      - condition:
+          temp_lt: 18
+        action:
+          power: on
+          mode: Heat
+          temperature: 20
+          fan_speed: Auto
+
+  - name: "Camera da letto"
+    ikea_sensor_id: ""  # TODO: UUID del sensore IKEA
+    panasonic_device_id: "<DEVICE_ID_AC>"  # Camera principale
+    rules:
+      # Regole valutate in ordine: scatta la PRIMA il cui 'condition' e' vero.
+      # Piu' condizioni nella stessa regola = AND logico.
+      - condition:
+          temp_gt: 26
+          humidity_gt: 60
+        action:
+          power: on
+          mode: Cool
+          temperature: 24
+          fan_speed: Auto
+      - condition:
+          temp_gt: 28
+        action:
+          power: on
+          mode: Cool
+          temperature: 22
+          fan_speed: Mid
+      - condition:
+          humidity_gt: 75
+        action:
+          power: on
+          mode: Dry
+          fan_speed: Low
+      - condition:
+          temp_lt: 18
+        action:
+          power: on
+          mode: Heat
+          temperature: 20
+          fan_speed: Auto
+
+  - name: "Salotto"
+    ikea_sensor_id: ""  # TODO: UUID del sensore IKEA
+    panasonic_device_id: "<DEVICE_ID_AC>"  # Salotto
+    rules:
+      # Regole valutate in ordine: scatta la PRIMA il cui 'condition' e' vero.
+      # Piu' condizioni nella stessa regola = AND logico.
+      - condition:
+          temp_gt: 26
+          humidity_gt: 60
+        action:
+          power: on
+          mode: Cool
+          temperature: 24
+          fan_speed: Auto
+      - condition:
+          temp_gt: 28
+        action:
+          power: on
+          mode: Cool
+          temperature: 22
+          fan_speed: Mid
+      - condition:
+          humidity_gt: 75
+        action:
+          power: on
+          mode: Dry
+          fan_speed: Low
+      - condition:
+          temp_lt: 18
+        action:
+          power: on
+          mode: Heat
+          temperature: 20
+          fan_speed: Auto
+
+schedule:
+  force_off_time: "03:00"  # inizio fascia notturna: spegne tutti gli AC (HH:MM)
+  night_off_end: "08:00"   # fine fascia: dalle 03:00 alle 08:00 gli AC restano
+                           # SPENTI (niente accensioni automatiche, anche se fa caldo)
+
+engine:
+  poll_interval_seconds: 60   # fallback polling se il WebSocket cade
+  cooldown_minutes: 5         # tempo minimo tra due cambi di stato AC
+  hysteresis_temp: 0.5        # banda morta temperatura (°C)
+  hysteresis_humidity: 2      # banda morta umidita' (%)
+
+# Algoritmo stagionale: la STAGIONE (decisa dalla temperatura ESTERNA media)
+# filtra quali modalita' sono ammesse. Soglie calibrate sullo storico Panasonic
+# (vedi docs/analisi_stagionale.md).
+season:
+  enabled: true
+  cooling_outdoor_threshold: 21   # T.est media > 21°C -> solo Cool/Dry
+  heating_outdoor_threshold: 16   # T.est media < 16°C -> solo Heat
+  outdoor_avg_window_hours: 24    # finestra media mobile temperatura esterna
+  sample_interval_minutes: 30     # ogni quanto campionare la T. esterna
+  hysteresis: 0.5                 # isteresi sui confini di stagione (°C)
+  safety_temp_low: 16             # T.interna <= 16°C -> sblocca Heat anche d'estate
+  safety_temp_high: 29            # T.interna >= 29°C -> sblocca Cool anche d'inverno
+
+# Rilevamento presenza casa/vuota via FRITZ!Box (TR-064). Se nessuno dei device
+# tracciati e' connesso alla rete per `away_grace_minutes` minuti, la casa e'
+# considerata vuota e TUTTI gli AC vengono spenti. Almeno un telefono attivo =>
+# casa abitata. Fail-safe: se il FRITZ!Box non risponde, si assume casa abitata.
+presence:
+  enabled: true
+  fritzbox:
+    address: "192.168.1.1"
+    user: "<UTENTE_FRITZBOX>"  # crea un utente dedicato in FRITZ!Box
+    password: "<PASSWORD_FRITZBOX>"
+  poll_interval_seconds: 60   # ogni quanto interrogare il FRITZ!Box
+  away_grace_minutes: 30      # minuti senza alcun telefono -> casa vuota
+  # Telefoni indicatori di presenza. Consiglio: IP fisso nel FRITZ!Box
+  # (gli iPhone usano MAC privato che puo' ruotare: l'IP riservato e' piu' stabile).
+  devices:
+    - name: "Telefono 1"
+      ip: "192.168.1.50"
+      mac: "AA:BB:CC:DD:EE:FF"
+    - name: "Telefono 1"
+      ip: "192.168.1.50"
+      mac: "AA:BB:CC:DD:EE:FF"
+
+# Luci: stanze in cui le lampadine sono un'UNICA plafoniera -> comandate insieme
+# (un solo controllo on/off + dimmer in dashboard, invece di luci separate).
+lights:
+  ceiling_rooms:
+    - "Salotto"
+    - "Camera da letto"
+    - "Stanza da letto"

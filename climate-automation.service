@@ -1,0 +1,26 @@
+# systemd unit per Climate Automation.
+# Installato da setup.sh in /etc/systemd/system/climate-automation.service.
+# I percorsi vengono sostituiti da setup.sh (__PROJECT_DIR__ / __USER__).
+
+[Unit]
+Description=Climate Automation (IKEA Dirigera + Panasonic Comfort Cloud)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=__USER__
+WorkingDirectory=__PROJECT_DIR__
+ExecStart=__PROJECT_DIR__/.venv/bin/python __PROJECT_DIR__/main.py
+Restart=always
+RestartSec=10
+# Lascia tempo al teardown graceful (SIGTERM gestito da main.py).
+KillSignal=SIGTERM
+TimeoutStopSec=30
+# Log su journald (oltre al file logs/climate.log gestito dall'app).
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=climate-automation
+
+[Install]
+WantedBy=multi-user.target

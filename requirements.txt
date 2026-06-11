@@ -1,0 +1,28 @@
+# ============================================================================
+# requirements.txt — Climate Automation
+# ============================================================================
+# Versioni pinned testate. Python 3.11+ richiesto.
+#
+# Per la sola PROVA DI CONNESSIONE (FASE 1 - mapping_tool.py) bastano le prime
+# tre dipendenze nella sezione "CORE INTEGRAZIONI". Le altre servono al sistema
+# completo (FASE 2) e verranno usate da setup.sh.
+# ============================================================================
+
+# --- CORE INTEGRAZIONI (necessarie gia' per il mapping tool) ---------------
+# Versioni verificate e installate su Python 3.13 il 2026-05-29.
+dirigera==1.2.7                          # API locale hub IKEA Dirigera (porta 8443)
+aio-panasonic-comfort-cloud==2025.5.1    # Panasonic Comfort Cloud async
+PyYAML==6.0.3                            # lettura/scrittura config.yaml
+
+# --- ENGINE / SCHEDULING (FASE 2) ------------------------------------------
+APScheduler==3.11.2                  # spegnimento forzato 03:00
+aiosqlite==0.22.1                    # SQLite async (storico letture e log)
+
+# --- API REST (FASE 2) -----------------------------------------------------
+fastapi==0.136.3
+uvicorn[standard]==0.48.0
+pydantic==2.13.4                     # gia' tirato da aio-panasonic-comfort-cloud
+
+# --- HTTP / utility --------------------------------------------------------
+aiohttp==3.13.5                      # client async (usato dal layer Panasonic)
+fritzconnection==1.15.1

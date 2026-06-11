@@ -1,0 +1,1401 @@
+@import "tailwindcss";
+
+/* ===========================================================================
+   Climate Automation — Tema "Brezza" (glassmorphism, chiaro)
+   Tailwind v4 per le utility + token semantici qui sotto.
+   Font di sistema (nessuna dipendenza esterna: gira anche offline su RPi).
+   =========================================================================== */
+
+/* Token "Brezza" esposti anche a Tailwind (utility tipo bg-glass, text-ink…) */
+@theme {
+  --color-ink: #1f2a37;
+  --color-ink-soft: #3d4d60;
+  --color-muted: #71809a;
+  --color-indigo: #5b8def;
+  --color-mint: #43c2b4;
+  --color-warm: #f0a868;
+  --radius-brz: 22px;
+}
+
+:root {
+  /* Sfondo: cielo che sfuma nel bianco */
+  --sky-1: #dbeafe;   /* azzurro tenue in alto */
+  --sky-2: #eef5ff;   /* a metà */
+  --sky-3: #f7fbff;   /* quasi bianco in basso */
+
+  /* Vetro */
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-strong: rgba(255, 255, 255, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.75);
+  --glass-hairline: rgba(120, 140, 170, 0.16);
+
+  /* Inchiostro */
+  --ink: #1f2a37;
+  --ink-soft: #3d4d60;
+  --muted: #71809a;
+
+  /* Accenti freschi */
+  --indigo: #5b8def;
+  --indigo-ink: #21487f;
+  --mint: #43c2b4;
+  --mint-soft: #d7f3ef;
+  --warm: #f0a868;     /* per il riscaldamento, caldo ma desaturato */
+  --warm-soft: #fdeede;
+
+  --ok: #34c759;
+  --ko: #ff6b6b;
+
+  /* Ombre morbide, mai bordi duri */
+  --shadow-sm: 0 1px 2px rgba(31, 42, 55, 0.04), 0 4px 12px rgba(31, 42, 55, 0.05);
+  --shadow-md: 0 2px 4px rgba(31, 42, 55, 0.05), 0 12px 32px rgba(31, 42, 55, 0.09);
+  --shadow-glow: 0 10px 40px rgba(91, 141, 239, 0.18);
+
+  --radius: 22px;
+  --radius-sm: 14px;
+  --radius-pill: 999px;
+}
+
+* { box-sizing: border-box; }
+html, body, #root { margin: 0; min-height: 100%; }
+
+body {
+  color: var(--ink);
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Inter, system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  /* Gradiente cielo fisso + due bagliori morbidi per profondità */
+  background:
+    radial-gradient(900px 500px at 12% -8%, rgba(95, 208, 197, 0.18), transparent 60%),
+    radial-gradient(1000px 600px at 100% 0%, rgba(91, 141, 239, 0.20), transparent 55%),
+    linear-gradient(180deg, var(--sky-1) 0%, var(--sky-2) 32%, var(--sky-3) 100%);
+  background-attachment: fixed;
+  min-height: 100vh;
+}
+
+.app {
+  max-width: 820px;
+  margin: 0 auto;
+  padding: 28px 20px 64px;
+}
+
+/* ---------- Header ---------- */
+.header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 22px;
+}
+.header h1 {
+  font-size: 1.5rem; font-weight: 700; letter-spacing: -0.02em; margin: 0;
+  color: var(--ink);
+  display: flex; align-items: center; gap: 9px;
+}
+.conn {
+  display: flex; align-items: center; gap: 14px;
+  font-size: 0.78rem; color: var(--muted); font-weight: 500;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  box-shadow: var(--shadow-sm);
+}
+.conn > span { display: inline-flex; align-items: center; gap: 6px; }
+.dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+.dot.ok { background: var(--ok); box-shadow: 0 0 0 3px rgba(52, 199, 89, 0.16); }
+.dot.ko { background: var(--ko); box-shadow: 0 0 0 3px rgba(255, 107, 107, 0.16); }
+
+/* ---------- Barra stagione + energia ---------- */
+.season-bar {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(18px); backdrop-filter: blur(18px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm);
+  padding: 12px 18px; margin-bottom: 20px;
+  font-size: 0.9rem; color: var(--ink-soft);
+  box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; flex-wrap: wrap; gap: 4px;
+}
+.season-bar b { color: var(--ink); font-weight: 650; }
+.energy-total { color: var(--indigo-ink); }
+
+/* ---------- Tabs ---------- */
+.tabs {
+  display: flex; gap: 6px; margin-bottom: 22px;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-pill);
+  padding: 5px;
+  box-shadow: var(--shadow-sm);
+}
+.tabs button {
+  flex: 1; padding: 10px 14px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted);
+  border-radius: var(--radius-pill);
+  font-size: 0.9rem; font-weight: 550;
+  transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+}
+.tabs button:hover { color: var(--ink-soft); }
+.tabs button.active {
+  background: #ffffff; color: var(--indigo-ink);
+  box-shadow: var(--shadow-sm);
+}
+
+/* ---------- Banner errore ---------- */
+.error-banner {
+  background: rgba(255, 107, 107, 0.12);
+  border: 1px solid rgba(255, 107, 107, 0.3);
+  color: #b13b3b; padding: 12px 16px;
+  border-radius: var(--radius-sm); margin-bottom: 16px; font-size: 0.86rem;
+}
+
+/* ---------- Cards stanza ---------- */
+.cards {
+  display: grid; gap: 18px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+}
+.card {
+  position: relative; overflow: hidden;
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius);
+  padding: 22px;
+  box-shadow: var(--shadow-md);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.28s ease;
+}
+.card:hover { transform: translateY(-3px); box-shadow: var(--shadow-md), var(--shadow-glow); }
+
+/* AC acceso: accento fresco in alto + lieve glow, NON invadente */
+.card.on { box-shadow: var(--shadow-md), var(--shadow-glow); }
+.card.on::before {
+  content: ''; position: absolute; inset: 0 0 auto 0; height: 4px;
+  background: linear-gradient(90deg, var(--indigo), var(--mint));
+}
+
+.card-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.card-head h2 { margin: 0; font-size: 1.12rem; font-weight: 650; letter-spacing: -0.01em; }
+
+.badge { font-size: 0.7rem; padding: 4px 10px; border-radius: var(--radius-pill); font-weight: 600; white-space: nowrap; }
+.badge.override { background: var(--indigo); color: #fff; }
+
+/* Letture: la temperatura è il numero-eroe */
+.readings { display: flex; align-items: flex-end; gap: 30px; margin: 18px 0 16px; }
+.reading { display: flex; align-items: baseline; gap: 1px; flex-wrap: wrap; }
+.reading .val {
+  font-size: 3rem; font-weight: 300; line-height: 1; letter-spacing: -0.04em;
+  color: var(--ink); font-variant-numeric: tabular-nums;
+}
+.reading .unit { font-size: 1.2rem; font-weight: 300; color: var(--muted); align-self: flex-start; margin-top: 0.15em; }
+.reading .lbl {
+  width: 100%; font-size: 0.66rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.09em; margin-top: 7px;
+}
+/* L'umidità è secondaria: più piccola e tenue */
+.reading.secondary .val { font-size: 1.7rem; font-weight: 400; color: var(--ink-soft); }
+.reading.secondary .unit { font-size: 0.9rem; }
+/* Valore mancante: trattino discreto, non "rotto" */
+.reading .val.empty { color: var(--muted); font-weight: 200; opacity: 0.5; }
+
+.ac-status { display: flex; align-items: center; gap: 10px; margin: 6px 0 4px; flex-wrap: wrap; }
+.pill {
+  font-size: 0.72rem; font-weight: 650; padding: 5px 12px;
+  border-radius: var(--radius-pill); letter-spacing: 0.02em;
+  display: inline-flex; align-items: center; gap: 6px;
+}
+.pill.on { background: var(--mint-soft); color: #0f7a6e; }
+.pill.off { background: rgba(120, 140, 170, 0.12); color: var(--muted); }
+.pill.ko { background: rgba(255, 107, 107, 0.14); color: #b13b3b; }
+.ac-detail { font-size: 0.86rem; color: var(--ink-soft); font-weight: 500; }
+
+/* Nota "nessun sensore": discreta, non allarmante */
+.note-nosensor {
+  font-size: 0.78rem; color: var(--muted); margin: 0 0 6px;
+  padding: 8px 12px; border-radius: 10px;
+  background: rgba(120, 140, 170, 0.08);
+}
+
+/* Consumi */
+.energy {
+  display: flex; align-items: baseline; gap: 7px;
+  margin-top: 16px; padding-top: 14px;
+  border-top: 1px solid var(--glass-hairline);
+}
+.energy-val { font-size: 1.25rem; font-weight: 650; color: var(--indigo-ink); font-variant-numeric: tabular-nums; }
+.energy-unit { font-size: 0.74rem; color: var(--muted); }
+.energy-split { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+
+.actions { display: flex; gap: 8px; margin-top: 18px; }
+
+/* ---------- Bottoni ---------- */
+.btn {
+  padding: 10px 16px; border-radius: var(--radius-pill); cursor: pointer;
+  border: 1px solid var(--glass-hairline);
+  background: var(--glass-strong);
+  -webkit-backdrop-filter: blur(10px); backdrop-filter: blur(10px);
+  color: var(--ink-soft); font-size: 0.86rem; font-weight: 550;
+  transition: transform 0.15s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+.btn:hover:not(:disabled) { box-shadow: var(--shadow-sm); transform: translateY(-1px); }
+.btn:active:not(:disabled) { transform: translateY(0); }
+.btn.primary {
+  background: linear-gradient(135deg, var(--indigo), #4f7fe0);
+  color: #fff; border: none; font-weight: 600;
+  box-shadow: 0 6px 18px rgba(91, 141, 239, 0.32);
+}
+.btn.ghost { background: transparent; border-color: transparent; }
+.btn.ghost:hover:not(:disabled) { background: rgba(120, 140, 170, 0.10); box-shadow: none; }
+.btn.tiny { padding: 3px 10px; font-size: 0.8rem; }
+.btn:disabled { opacity: 0.45; cursor: default; }
+
+/* ---------- Form override ---------- */
+.override-form {
+  margin-top: 18px; padding-top: 16px;
+  border-top: 1px solid var(--glass-hairline);
+  display: grid; gap: 12px;
+}
+.row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.row span { font-size: 0.86rem; color: var(--ink-soft); font-weight: 500; }
+input, select {
+  background: rgba(255, 255, 255, 0.85);
+  color: var(--ink); border: 1px solid var(--glass-hairline);
+  border-radius: 11px; padding: 9px 12px; font-size: 0.9rem;
+  font-family: inherit;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+input:focus, select:focus {
+  outline: none; border-color: var(--indigo);
+  box-shadow: 0 0 0 3px rgba(91, 141, 239, 0.16);
+}
+input[type="number"] { width: 92px; }
+input[type="checkbox"] { width: 18px; height: 18px; accent-color: var(--indigo); }
+
+/* ---------- Config ---------- */
+.config-panel { display: grid; gap: 20px; }
+.cfg-section {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius); padding: 22px;
+  box-shadow: var(--shadow-sm);
+}
+.cfg-section h2 { margin: 0 0 16px; font-size: 1.08rem; font-weight: 650; letter-spacing: -0.01em; }
+.cfg-room { border-top: 1px solid var(--glass-hairline); padding-top: 16px; margin-top: 16px; }
+.cfg-room h3 { margin: 0 0 12px; font-size: 0.98rem; font-weight: 600; color: var(--indigo-ink); }
+.rule {
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid var(--glass-hairline);
+  border-radius: var(--radius-sm); padding: 14px; margin-bottom: 12px;
+}
+.rule-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.rule-idx { font-size: 0.72rem; color: var(--muted); font-weight: 600; }
+.rule-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+fieldset { border: 1px solid var(--glass-hairline); border-radius: 12px; padding: 10px; margin: 0; }
+legend { font-size: 0.66rem; color: var(--muted); padding: 0 6px; text-transform: uppercase; letter-spacing: 0.08em; font-weight: 600; }
+fieldset label { display: flex; align-items: center; justify-content: space-between; gap: 6px; font-size: 0.82rem; margin: 6px 0; color: var(--ink-soft); }
+fieldset input { width: 72px; }
+.cfg-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; }
+
+/* ---------- Log ---------- */
+.event-log .log-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.event-log h2 { font-size: 1.08rem; font-weight: 650; margin: 0; }
+.log-list { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+.log-list li {
+  background: var(--glass);
+  -webkit-backdrop-filter: blur(14px); backdrop-filter: blur(14px);
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-sm); padding: 13px 16px;
+  box-shadow: var(--shadow-sm);
+}
+.log-list li.log-err { border-color: rgba(255, 107, 107, 0.4); background: rgba(255, 107, 107, 0.07); }
+.log-line1 { display: flex; gap: 10px; align-items: center; font-size: 0.8rem; }
+.log-room { font-weight: 650; color: var(--ink); }
+.log-rule { color: var(--indigo-ink); font-weight: 550; }
+.log-ts { margin-left: auto; color: var(--muted); font-variant-numeric: tabular-nums; }
+.log-action { font-size: 0.86rem; margin-top: 5px; color: var(--ink-soft); }
+.log-vals { font-size: 0.75rem; color: var(--muted); margin-top: 3px; font-variant-numeric: tabular-nums; }
+
+/* ---------- Util ---------- */
+.muted { color: var(--muted); }
+.small { font-size: 0.8rem; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 560px) {
+  .app { padding: 20px 14px 48px; }
+  .header { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .cards { grid-template-columns: 1fr; }
+  .rule-grid { grid-template-columns: 1fr; }
+}
+
+/* Rispetto delle preferenze di movimento ridotto */
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+  .card:hover { transform: none; }
+}
+
+/* ===========================================================================
+   REDESIGN TERMOSTATO — ispirato all'app Panasonic Comfort Cloud
+   Una stanza alla volta, controllo diretto. Mobile-first.
+   =========================================================================== */
+
+/* La app diventa una colonna a tutta altezza con nav in basso */
+.app { display: flex; flex-direction: column; min-height: 100dvh; max-width: 480px; padding: 0; }
+
+/* Tab per stanza (in alto, sottolineatura attiva) */
+.room-tabs {
+  display: flex; gap: 4px; padding: 14px 10px 0; overflow-x: auto;
+  -webkit-overflow-scrolling: touch; scrollbar-width: none;
+}
+.room-tabs::-webkit-scrollbar { display: none; }
+.room-tabs button {
+  flex: 0 0 auto; padding: 10px 16px 12px; border: none; background: none;
+  color: var(--muted); font-size: 1.02rem; font-weight: 600; cursor: pointer;
+  position: relative; white-space: nowrap; letter-spacing: -0.01em;
+}
+.room-tabs button.active { color: var(--ink); }
+.room-tabs button.active::after {
+  content: ''; position: absolute; left: 14px; right: 14px; bottom: 4px; height: 3px;
+  background: var(--ink); border-radius: 3px;
+}
+
+/* Contenitore termostato */
+.thermo {
+  --accent: #7d97b8;
+  flex: 1; display: flex; flex-direction: column;
+  padding: 8px 22px 18px; gap: 4px;
+}
+.thermo-off { align-items: center; justify-content: center; text-align: center; gap: 8px; }
+.thermo-unreach { font-size: 1.05rem; font-weight: 600; color: var(--ink-soft); }
+
+/* Riga letture ambiente + nanoe */
+.thermo-top {
+  display: flex; align-items: center; gap: 26px; padding: 18px 4px 6px;
+}
+.env { display: flex; align-items: center; gap: 6px; color: var(--ink); }
+.env-ic { color: var(--ink-soft); }
+.env-val { font-size: 1.5rem; font-weight: 600; letter-spacing: -0.02em; }
+.env-u { font-size: 0.8rem; color: var(--muted); margin-left: -2px; align-self: flex-start; margin-top: 4px; }
+.nanoe {
+  margin-left: auto; display: flex; align-items: center; gap: 6px;
+  border: none; background: none; cursor: pointer;
+  font-size: 1.05rem; font-weight: 700; color: #c3ccd6; letter-spacing: 0.02em;
+}
+.nanoe b { font-weight: 800; }
+.nanoe-dot { width: 22px; height: 14px; border-radius: 10px; background: #c3ccd6; position: relative; transition: background .2s; }
+.nanoe-dot::after { content: ''; position: absolute; width: 12px; height: 12px; border-radius: 50%; background: #fff; top: 1px; left: 1px; transition: left .2s; }
+.nanoe.on { color: var(--ink-soft); }
+.nanoe.on .nanoe-dot { background: var(--accent); }
+.nanoe.on .nanoe-dot::after { left: 9px; }
+
+/* Setpoint grande al centro */
+.thermo-set { text-align: center; padding: 30px 0 18px; transition: opacity .25s; }
+.thermo-set.dim { opacity: 0.32; }
+.set-mode {
+  display: inline-flex; align-items: center; gap: 6px;
+  color: var(--ink-soft); font-size: 1.05rem; font-weight: 500; margin-bottom: 6px;
+}
+.set-big {
+  font-size: 5.6rem; font-weight: 300; line-height: 1; color: var(--ink);
+  letter-spacing: -0.04em; font-variant-numeric: tabular-nums;
+}
+.set-dec { font-size: 2.6rem; font-weight: 300; }
+.set-u { font-size: 1.6rem; color: var(--muted); font-weight: 400; vertical-align: super; }
+.set-nofan { color: var(--muted); }
+
+/* Slider temperatura con +/- */
+.thermo-slider { display: flex; align-items: center; gap: 14px; padding: 8px 2px 6px; }
+.round {
+  width: 44px; height: 44px; flex: 0 0 auto; border-radius: 50%;
+  border: 1.5px solid var(--glass-hairline); background: rgba(255,255,255,0.6);
+  color: var(--ink); font-size: 1.5rem; line-height: 1; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  transition: transform .1s, background .15s;
+}
+.round:active { transform: scale(0.92); }
+.round:disabled { opacity: 0.35; cursor: default; }
+.thermo-slider input[type="range"] {
+  flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 6px;
+  background: linear-gradient(to right, var(--accent) 0%, var(--accent) var(--fill, 50%), #d6deea var(--fill, 50%));
+  outline: none; padding: 0;
+}
+.thermo-slider input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none; width: 28px; height: 28px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--accent); cursor: pointer;
+  box-shadow: 0 2px 6px rgba(40,60,90,0.2);
+}
+.thermo-slider input[type="range"]::-moz-range-thumb {
+  width: 28px; height: 28px; border-radius: 50%; background: #fff;
+  border: 2px solid var(--accent); cursor: pointer;
+}
+.thermo-slider input:disabled { opacity: 0.4; }
+
+/* Picker a comparsa (modo/ventola) */
+.picker {
+  display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 0 2px; justify-content: center;
+}
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 9px 14px; border-radius: 22px; cursor: pointer;
+  border: 1.5px solid var(--glass-hairline); background: rgba(255,255,255,0.55);
+  color: var(--ink-soft); font-size: 0.9rem; font-weight: 500;
+}
+.chip.active { border-color: var(--accent); color: var(--ink); background: #fff; box-shadow: 0 2px 8px rgba(40,60,90,0.08); }
+
+/* Barra azioni in basso al termostato */
+.thermo-bar {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
+  margin-top: auto; padding-top: 14px;
+}
+.bar-btn {
+  height: 64px; border-radius: 18px; cursor: pointer;
+  border: 1.5px solid var(--glass-hairline); background: rgba(255,255,255,0.6);
+  color: var(--ink-soft); display: flex; flex-direction: column;
+  align-items: center; justify-content: center; gap: 2px;
+  transition: transform .1s, background .15s, border-color .15s;
+}
+.bar-btn:active { transform: scale(0.95); }
+.bar-btn.active { border-color: var(--accent); color: var(--ink); background: #fff; }
+.bar-sub { font-size: 0.66rem; font-weight: 600; }
+.bar-btn.power { background: #2b3440; color: #fff; border-color: #2b3440; }
+.bar-btn.power.on { background: var(--accent); border-color: var(--accent); }
+
+.thermo-auto {
+  margin-top: 12px; padding: 11px; border-radius: 14px; cursor: pointer;
+  border: 1.5px solid var(--glass-hairline); background: rgba(255,255,255,0.55);
+  color: var(--ink-soft); font-size: 0.9rem; font-weight: 600;
+}
+
+/* Riepilogo casa sotto al termostato */
+.home-summary {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px;
+  padding: 14px 22px; font-size: 0.85rem; color: var(--ink-soft);
+  border-top: 1px solid var(--glass-hairline);
+}
+.hs-item { display: inline-flex; align-items: center; gap: 5px; }
+.conn-mini { margin-left: auto; }
+
+/* Navigazione sezioni in basso */
+.bottom-nav {
+  position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(4, 1fr);
+  background: var(--glass-strong); backdrop-filter: blur(14px);
+  border-top: 1px solid var(--glass-hairline); padding: 6px 4px;
+  padding-bottom: max(6px, env(safe-area-inset-bottom));
+}
+.bottom-nav button {
+  border: none; background: none; cursor: pointer; padding: 8px 4px;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  color: var(--muted); font-size: 0.72rem; font-weight: 600;
+}
+.bottom-nav button.active { color: var(--ink); }
+.bn-ic { display: flex; align-items: center; justify-content: center; height: 22px; }
+
+.content { flex: 1; padding: 16px; }
+.center { text-align: center; padding: 40px 0; }
+
+/* Sparkline storico 24h */
+.spark { padding: 14px 0 6px; }
+.spark-svg { width: 100%; height: 92px; display: block; }
+.spark-meta {
+  display: flex; justify-content: space-between; align-items: center;
+  font-size: 0.74rem; color: var(--muted); margin-top: 2px;
+}
+.spark-meta b { color: var(--ink-soft); font-weight: 600; }
+.spark-mid { font-size: 0.7rem; letter-spacing: 0.02em; text-transform: uppercase; }
+.spark-empty {
+  padding: 24px 0; text-align: center; font-size: 0.82rem; color: var(--muted);
+}
+
+/* Badge presenza nel riepilogo casa */
+.hs-item.presence { font-weight: 600; padding: 3px 10px; border-radius: 20px; }
+.hs-item.presence.home { background: rgba(90,180,120,0.16); color: #2f7d4e; }
+.hs-item.presence.away { background: rgba(220,140,90,0.16); color: #b5683a; }
+
+/* Sezione Storico */
+.history { display: flex; flex-direction: column; gap: 14px; }
+.hist-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.hist-head h2 { margin: 0; font-size: 1.15rem; color: var(--ink); }
+.range-pick { display: flex; gap: 4px; background: rgba(255,255,255,0.5); border-radius: 12px; padding: 3px; }
+.range-pick button {
+  border: none; background: none; cursor: pointer; padding: 6px 12px; border-radius: 9px;
+  font-size: 0.82rem; font-weight: 600; color: var(--muted);
+}
+.range-pick button.active { background: #fff; color: var(--ink); box-shadow: 0 1px 4px rgba(40,60,90,0.1); }
+.hist-card {
+  background: var(--glass); border: 1px solid var(--glass-hairline);
+  border-radius: 18px; padding: 14px 16px 8px;
+}
+.hist-card-head { display: flex; align-items: baseline; justify-content: space-between; }
+.hist-card-head h3 { margin: 0; font-size: 1rem; color: var(--ink); }
+.hist-now { font-size: 1.05rem; font-weight: 600; color: var(--ink); }
+.hist-note { text-align: center; padding-top: 4px; }
+
+/* ===========================================================================
+   FOGLIO MODALE selezione modalità / ventola (stile app Panasonic)
+   =========================================================================== */
+.sheet-overlay {
+  position: fixed; inset: 0; z-index: 50;
+  background: rgba(30, 42, 58, 0.28); backdrop-filter: blur(2px);
+  display: flex; align-items: flex-start; justify-content: center;
+  padding: 0; animation: fadein .15s ease;
+}
+@keyframes fadein { from { opacity: 0 } to { opacity: 1 } }
+.sheet {
+  position: relative; width: 100%; max-width: 480px;
+  background: #eef1f4; border-radius: 0 0 26px 26px;
+  padding: 22px 18px 30px; min-height: 46vh;
+  box-shadow: 0 12px 40px rgba(30,42,58,0.18);
+  animation: slidedown .22s cubic-bezier(.2,.8,.2,1);
+}
+@keyframes slidedown { from { transform: translateY(-12px); opacity: .6 } to { transform: none; opacity: 1 } }
+.sheet-close {
+  position: absolute; top: 16px; right: 16px; width: 38px; height: 38px;
+  border-radius: 50%; border: none; cursor: pointer;
+  background: rgba(140,155,175,0.18); color: var(--ink-soft);
+  font-size: 1rem; display: flex; align-items: center; justify-content: center;
+}
+.sheet-title { font-size: 0.95rem; font-weight: 600; color: var(--ink-soft); margin: 10px 4px 14px; }
+
+/* Griglia 4 card modalità */
+.mode-grid {
+  display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px;
+  margin-top: 36px;
+}
+.mode-card {
+  background: #fff; border: none; cursor: pointer;
+  border-radius: 16px; padding: 22px 6px 0; overflow: hidden;
+  display: flex; flex-direction: column; align-items: center; gap: 14px;
+  color: var(--ink); box-shadow: 0 2px 10px rgba(40,60,90,0.07);
+  transition: transform .1s;
+}
+.mode-card:active { transform: scale(0.96); }
+.mode-name { font-size: 1.05rem; font-weight: 500; }
+.mode-underline {
+  width: 100%; height: 5px; margin-top: 4px; border-radius: 5px 5px 0 0;
+  background: var(--mc); opacity: 0.55; transition: opacity .15s, height .15s;
+}
+.mode-card.active .mode-underline,
+.mode-row.active .mode-underline { opacity: 1; height: 6px; }
+.mode-card.active, .mode-row.active { box-shadow: 0 3px 14px rgba(40,60,90,0.13); }
+
+/* Riga larga (Fan, o lista ventola) */
+.mode-row {
+  display: flex; align-items: center; gap: 14px; width: 100%;
+  background: #fff; border: none; cursor: pointer; color: var(--ink);
+  border-radius: 16px; padding: 20px 22px 0; margin-top: 14px; overflow: hidden;
+  box-shadow: 0 2px 10px rgba(40,60,90,0.07); position: relative;
+}
+.mode-row .mode-name { flex: 1; text-align: left; padding-bottom: 18px; }
+.mode-row .mode-underline { position: absolute; left: 22px; bottom: 0; width: 38px; }
+.fan-list { display: flex; flex-direction: column; }
+
+/* ===========================================================================
+   FOGLIO VENTOLA — barre di livello + frecce + toggle Auto (stile Panasonic)
+   =========================================================================== */
+.fan-vis {
+  display: flex; align-items: flex-end; justify-content: center; gap: 14px;
+  margin: 50px 0 44px; min-height: 130px; color: var(--ink);
+}
+.fan-bars { display: flex; align-items: flex-end; gap: 7px; }
+.fan-bar {
+  width: 11px; border-radius: 3px; background: #c8cfd6;
+  transition: background .15s;
+}
+.fan-bar.on { background: #2b3440; }
+
+/* Frecce avanti / indietro: due card bianche affiancate */
+.fan-arrows {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+  max-width: 380px; margin: 0 auto;
+}
+.fan-arrows button {
+  height: 90px; border: none; cursor: pointer; border-radius: 16px;
+  background: #fff; color: var(--ink);
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 2px 10px rgba(40,60,90,0.08); transition: transform .1s;
+}
+.fan-arrows button:active { transform: scale(0.96); }
+.fan-arrows button:disabled { opacity: 0.32; cursor: default; box-shadow: none; }
+
+/* Etichetta + interruttore Auto */
+.fan-auto { text-align: center; margin-top: 34px; }
+.fan-auto-label { font-size: 1.25rem; color: var(--ink); margin-bottom: 14px; }
+.switch {
+  width: 78px; height: 42px; border-radius: 22px; cursor: pointer;
+  border: 2px solid var(--ink); background: #fff; padding: 0; position: relative;
+  transition: background .18s, border-color .18s;
+}
+.switch-knob {
+  position: absolute; top: 3px; left: 3px; width: 32px; height: 32px;
+  border-radius: 50%; background: var(--ink); transition: left .18s, background .18s;
+}
+.switch.on { background: var(--ink); border-color: var(--ink); }
+.switch.on .switch-knob { left: 41px; background: #fff; }
+
+/* Intensità Powerful / Quiet (sotto la barra controlli) */
+.eco-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+.eco-btn {
+  display: flex; align-items: center; justify-content: center; gap: 8px;
+  height: 48px; border-radius: 14px; cursor: pointer;
+  border: 1.5px solid var(--glass-hairline); background: rgba(255,255,255,0.5);
+  color: var(--ink-soft); font-size: 0.9rem; font-weight: 600;
+  transition: transform .1s, background .15s, border-color .15s, color .15s;
+}
+.eco-btn:active { transform: scale(0.97); }
+.eco-btn:disabled { opacity: 0.35; cursor: default; }
+.eco-btn.powerful.active { background: #fff3ea; border-color: #e8893f; color: #c4631e; }
+.eco-btn.quiet.active { background: #eef2fb; border-color: #5b8def; color: #345fb0; }
+
+/* ===========================================================================
+   FOGLIO SWING — lamelle posizione + frecce su/giù + toggle Auto/Swing
+   =========================================================================== */
+.center-title { text-align: center; margin-top: 36px; margin-bottom: 26px; font-size: 1.1rem; color: var(--ink); }
+.swing-vis {
+  display: flex; flex-direction: column; align-items: center; gap: 9px;
+  margin: 0 auto 40px; width: 120px;
+}
+.louver {
+  width: 100%; height: 9px; border-radius: 5px; background: #d2d8df;
+  transition: background .15s, transform .15s;
+}
+.louver.on { background: #2b3440; transform: scaleX(1.04); }
+/* Stato Swing: tutte le lamelle leggermente attive con animazione */
+.louver.swing { background: #9aa6b3; animation: louver-wave 1.4s ease-in-out infinite; }
+.swing-vis .louver.swing:nth-child(1) { animation-delay: 0s; }
+.swing-vis .louver.swing:nth-child(2) { animation-delay: 0.12s; }
+.swing-vis .louver.swing:nth-child(3) { animation-delay: 0.24s; }
+.swing-vis .louver.swing:nth-child(4) { animation-delay: 0.36s; }
+.swing-vis .louver.swing:nth-child(5) { animation-delay: 0.48s; }
+@keyframes louver-wave {
+  0%, 100% { background: #d2d8df; }
+  50% { background: #2b3440; }
+}
+.swing-toggles {
+  display: flex; justify-content: center; gap: 56px; margin-top: 34px;
+}
+.swing-tg { text-align: center; }
+.swing-tg .fan-auto-label { margin-bottom: 12px; }
+
+/* Layout foglio swing come app Panasonic: principale a sx, toggle a dx */
+.swing-layout { display: flex; gap: 18px; margin-top: 44px; align-items: flex-start; }
+.swing-main { flex: 1; text-align: center; }
+.swing-title { font-size: 1.15rem; color: var(--ink); margin-bottom: 18px; }
+.swing-icon { color: var(--ink); display: flex; justify-content: center; margin-bottom: 28px; min-height: 72px; }
+.swing-main .fan-arrows { max-width: none; }
+.swing-side {
+  flex: 0 0 96px; display: flex; flex-direction: column; gap: 26px;
+  align-items: center; padding-top: 4px;
+}
+.swing-side .swing-tg { text-align: center; }
+.swing-side .fan-auto-label { font-size: 1.15rem; margin-bottom: 12px; }
+
+/* ===========================================================================
+   RESTYLE MODERNO (Tailwind v4 + token) — card fluttuante, profondità, glow
+   =========================================================================== */
+
+/* Termostato come card fluttuante in vetro, non più pannello piatto */
+.app { padding: 14px 14px 0; }
+.thermo {
+  margin: 6px auto 0; max-width: 440px;
+  background: linear-gradient(180deg, rgba(255,255,255,0.78), rgba(255,255,255,0.58));
+  border: 1px solid rgba(255,255,255,0.85);
+  border-radius: 30px;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.9) inset,
+    0 20px 50px -20px rgba(31,42,55,0.30),
+    0 8px 20px -12px rgba(31,42,55,0.18);
+  -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  padding: 20px 22px 22px;
+}
+
+/* Chip ambiente in vetro (sostituiscono le letture piatte) */
+.thermo-top { gap: 10px; padding: 4px 2px 2px; }
+.env-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  padding: 8px 13px; border-radius: 16px;
+  background: rgba(255,255,255,0.6); border: 1px solid rgba(255,255,255,0.8);
+  box-shadow: 0 2px 8px -4px rgba(31,42,55,0.18);
+  color: var(--ink);
+}
+.env-chip .env-val { font-size: 1.15rem; font-weight: 650; letter-spacing: -0.02em; }
+.env-chip .env-lbl { font-size: 0.7rem; color: var(--muted); font-weight: 500; }
+
+/* Setpoint: alone colorato morbido dietro il numero, tinta della modalità */
+.thermo-set { position: relative; padding: 38px 0 22px; }
+.thermo-set::before {
+  content: ''; position: absolute; left: 50%; top: 52%; transform: translate(-50%,-50%);
+  width: 230px; height: 230px; border-radius: 50%;
+  background: radial-gradient(circle, color-mix(in srgb, var(--accent) 26%, transparent), transparent 68%);
+  filter: blur(8px); z-index: 0; transition: background .4s ease;
+}
+.thermo-set > * { position: relative; z-index: 1; }
+.set-big { font-weight: 250; letter-spacing: -0.05em; }
+
+/* Slider: traccia più spessa e morbida, pollice con alone */
+.thermo-slider input[type="range"] { height: 8px; border-radius: 8px; }
+.thermo-slider input[type="range"]::-webkit-slider-thumb {
+  width: 30px; height: 30px;
+  box-shadow: 0 2px 10px -2px color-mix(in srgb, var(--accent) 60%, transparent), 0 0 0 6px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+.round {
+  background: rgba(255,255,255,0.75); border: 1px solid rgba(255,255,255,0.9);
+  box-shadow: 0 3px 10px -4px rgba(31,42,55,0.25); font-weight: 300;
+}
+
+/* Barra azioni: pulsanti più morbidi e profondi */
+.bar-btn {
+  border-radius: 20px; border: 1px solid rgba(255,255,255,0.8);
+  background: rgba(255,255,255,0.62);
+  box-shadow: 0 4px 14px -8px rgba(31,42,55,0.25);
+  transition: transform .12s, box-shadow .15s, background .15s;
+}
+.bar-btn.active {
+  background: #fff;
+  box-shadow: 0 6px 18px -8px color-mix(in srgb, var(--accent) 50%, rgba(31,42,55,0.3));
+  border-color: color-mix(in srgb, var(--accent) 40%, white);
+}
+.bar-btn.power { box-shadow: 0 6px 18px -8px rgba(43,52,64,0.5); }
+.bar-btn.power.on {
+  box-shadow: 0 8px 22px -8px color-mix(in srgb, var(--accent) 65%, transparent);
+}
+
+/* Pillole Powerful/Quiet più moderne */
+.eco-btn { border-radius: 16px; box-shadow: 0 3px 12px -8px rgba(31,42,55,0.3); }
+
+/* Riepilogo casa come riga di chip */
+.home-summary {
+  max-width: 440px; margin: 14px auto 0; border-top: none;
+  background: rgba(255,255,255,0.5); border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 20px; box-shadow: 0 4px 14px -10px rgba(31,42,55,0.2);
+}
+
+/* Tab stanze: pillola attiva invece di sola sottolineatura */
+.room-tabs { max-width: 440px; margin: 0 auto; padding: 6px; gap: 2px;
+  background: rgba(255,255,255,0.4); border-radius: 18px; }
+.room-tabs button { border-radius: 13px; padding: 9px 16px; }
+.room-tabs button.active { background: rgba(255,255,255,0.92); box-shadow: 0 3px 10px -5px rgba(31,42,55,0.3); }
+.room-tabs button.active::after { display: none; }
+
+/* Bottom nav più ariosa */
+/* Bottom-nav ANCORATA in fondo allo schermo (fixed), non sticky:
+   con poco contenuto sticky resterebbe a metà pagina sovrapponendosi alle card. */
+.bottom-nav {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 40;
+  width: 100%; max-width: 480px; margin: 0 auto;
+  border-radius: 22px 22px 0 0;
+  border: 1px solid rgba(255,255,255,0.7); border-bottom: none;
+  box-shadow: 0 -8px 24px -16px rgba(31,42,55,0.22);
+}
+/* Spazio in fondo al contenuto, così l'ultima card non finisce sotto la nav. */
+.app { padding-bottom: calc(76px + env(safe-area-inset-bottom)); }
+
+/* ===========================================================================
+   Riepilogo casa — griglia di stat-card in vetro (sostituisce .home-summary)
+   =========================================================================== */
+.summary-grid {
+  max-width: 440px; margin: 16px auto 0;
+  display: grid; grid-template-columns: 1fr 1fr; gap: 10px;
+}
+.stat {
+  display: flex; align-items: center; gap: 11px;
+  padding: 12px 14px; border-radius: 18px;
+  background: rgba(255,255,255,0.6);
+  border: 1px solid rgba(255,255,255,0.8);
+  box-shadow: 0 4px 14px -10px rgba(31,42,55,0.22);
+}
+.stat-ic { color: var(--ink-soft); flex: 0 0 auto; }
+.stat-body { min-width: 0; }
+.stat-val {
+  font-size: 0.98rem; font-weight: 650; color: var(--ink);
+  letter-spacing: -0.01em; line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.stat-unit { font-size: 0.72rem; font-weight: 500; color: var(--muted); }
+.stat-lbl {
+  font-size: 0.68rem; color: var(--muted); font-weight: 500;
+  text-transform: uppercase; letter-spacing: 0.05em; margin-top: 2px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+/* Presenza: tinta dello sfondo coerente con lo stato */
+.stat-home { background: linear-gradient(180deg, rgba(67,194,180,0.16), rgba(255,255,255,0.5)); }
+.stat-home .stat-ic { color: #2f9e8f; }
+.stat-away { background: linear-gradient(180deg, rgba(240,168,104,0.18), rgba(255,255,255,0.5)); }
+.stat-away .stat-ic { color: #c4631e; }
+
+/* Chip temperatura da sonda AC (fallback senza sensore IKEA): indicativa */
+.env-chip.env-probe {
+  background: linear-gradient(180deg, rgba(240,168,104,0.16), rgba(255,255,255,0.5));
+  border-color: rgba(240,168,104,0.4);
+}
+.env-chip.env-probe .env-ic, .env-chip.env-probe .stat-ic { color: #c4631e; }
+.env-chip.env-probe .env-lbl { color: #c4631e; font-weight: 600; }
+
+/* ===========================================================================
+   FIX overflow card centrale su mobile: la riga letture+nanoe sforava a destra
+   =========================================================================== */
+.thermo { overflow: hidden; }                 /* niente sbordo oltre la card */
+.thermo-top { flex-wrap: nowrap; gap: 8px; min-width: 0; }
+.env-chip { padding: 7px 10px; min-width: 0; flex: 0 1 auto; }
+.env-chip .env-val { font-size: 1.05rem; }
+.env-chip .env-lbl { white-space: nowrap; }
+.nanoe { font-size: 0.9rem; flex: 0 0 auto; white-space: nowrap; }
+/* slider e bottoni +/- non devono toccare i bordi */
+.thermo-slider { gap: 10px; min-width: 0; }
+.thermo-slider input[type="range"] { min-width: 0; }
+
+/* ===========================================================================
+   Animazione icona SWING nel foglio (come app Panasonic)
+   - manuale: l'icona si INCLINA all'angolo della posizione, con transizione
+   - swing:   OSCILLA in continuo
+   =========================================================================== */
+.swing-icon { color: var(--ink); display: flex; justify-content: center;
+  margin-bottom: 28px; min-height: 72px; }
+.swing-icon svg { transition: transform .35s cubic-bezier(.34,1.4,.5,1); transform-origin: 50% 30%; }
+/* Posizione manuale: inclina secondo --tilt (impostato inline da cur) */
+.swing-icon.is-manual svg { transform: rotate(var(--tilt, 0deg)); }
+/* Modalità Swing: oscillazione continua su/giù */
+.swing-icon.is-swing svg { animation: swing-osc 2s ease-in-out infinite; }
+@keyframes swing-osc {
+  0%, 100% { transform: rotate(-38deg); }
+  50%      { transform: rotate(38deg); }
+}
+
+/* ===========================================================================
+   DASHBOARD A GRIGLIA (stile mockup: glassmorphism, landscape + responsive)
+   =========================================================================== */
+.dash {
+  max-width: 1280px; margin: 0 auto; padding: 18px 18px 90px;
+  display: flex; flex-direction: column; gap: 16px;
+}
+.dash-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.greet-hi { font-size: 1.5rem; font-weight: 750; letter-spacing: -0.02em; color: var(--ink); }
+.greet-sub { font-size: 0.85rem; color: var(--muted); }
+.theme-toggle {
+  display: flex; gap: 4px; background: var(--glass); border: 1px solid var(--glass-border);
+  border-radius: 999px; padding: 4px; box-shadow: var(--shadow-sm);
+}
+.theme-toggle button {
+  display: inline-flex; align-items: center; gap: 5px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted); font-size: 0.82rem; font-weight: 600;
+  padding: 7px 14px; border-radius: 999px;
+}
+.theme-toggle button.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+
+/* Griglia di card responsive */
+.dash-grid {
+  display: grid; gap: 16px;
+  grid-template-columns: repeat(3, 1fr);
+  grid-auto-rows: minmax(0, auto);
+}
+.dash-grid .card {
+  background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(150%);
+  backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--glass-border); border-radius: 22px; padding: 18px;
+  box-shadow: var(--shadow-md);
+}
+.card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 14px; }
+.card-head h3 { margin: 0; font-size: 1.02rem; font-weight: 650; color: var(--ink); }
+.card-sub { margin-left: auto; font-size: 0.78rem; color: var(--muted); }
+.card-ic {
+  width: 34px; height: 34px; border-radius: 11px; display: flex; align-items: center;
+  justify-content: center; background: #fff; box-shadow: var(--shadow-sm);
+}
+.card-ic.hum { color: #4ea1ff; } .card-ic.energy { color: #e8b53f; } .card-ic.light { color: #f0a830; }
+
+/* Card orologio */
+.card-clock { display: flex; flex-direction: column; justify-content: center; }
+.clock-date { font-size: 0.9rem; color: var(--muted); font-weight: 600; }
+.clock-time { font-size: 3.4rem; font-weight: 300; letter-spacing: -0.04em; color: var(--ink); line-height: 1.05; }
+.clock-temp { font-size: 1.6rem; font-weight: 400; color: var(--ink-soft); }
+.clock-temp span { font-size: 0.9rem; color: var(--muted); }
+
+/* Anello (umidità) */
+.ring { position: relative; width: 130px; height: 130px; margin: 4px auto 0; }
+.ring svg { width: 100%; height: 100%; }
+.ring-label { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center;
+  font-size: 1.5rem; font-weight: 700; color: var(--ink); }
+
+/* Consumo */
+.cons-big { font-size: 1.9rem; font-weight: 700; color: var(--ink); letter-spacing: -0.02em; }
+.cons-big span { font-size: 0.8rem; font-weight: 500; color: var(--muted); }
+.cons-rooms { display: flex; align-items: flex-end; gap: 10px; height: 80px; margin-top: 12px; }
+.cons-bar-wrap { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; justify-content: flex-end; gap: 5px; }
+.cons-bar { width: 70%; min-height: 4px; border-radius: 6px 6px 0 0;
+  background: linear-gradient(180deg, #f0a830, #f7d089); }
+.cons-lbl { font-size: 0.62rem; color: var(--muted); }
+
+/* Luci */
+.lights-rooms { display: flex; flex-direction: column; gap: 8px; }
+.light-room { border-radius: 14px; background: rgba(255,255,255,0.4); overflow: hidden; }
+.light-room-head { display: flex; align-items: center; gap: 9px; width: 100%; border: none; cursor: pointer;
+  background: transparent; padding: 11px 12px; color: var(--ink); }
+.lr-on { color: #f0a830; } .lr-off { color: var(--muted); }
+.lr-name { font-weight: 600; font-size: 0.9rem; }
+.lr-count { margin-left: auto; font-size: 0.74rem; color: var(--muted); }
+.mini-switch { width: 38px; height: 22px; border-radius: 12px; background: #cdd5df; position: relative; transition: background .2s; flex: 0 0 auto; }
+.mini-switch.on { background: #f0a830; }
+.mini-knob { position: absolute; top: 2px; left: 2px; width: 18px; height: 18px; border-radius: 50%; background: #fff; transition: left .2s; }
+.mini-switch.on .mini-knob { left: 18px; }
+.light-list { padding: 4px 12px 12px; display: flex; flex-direction: column; gap: 8px; }
+.light-row { display: flex; align-items: center; gap: 10px; }
+.light-name { display: inline-flex; align-items: center; gap: 6px; border: none; background: transparent;
+  cursor: pointer; color: var(--muted); font-size: 0.84rem; flex: 0 0 auto; min-width: 84px; }
+.light-row.on .light-name { color: var(--ink); }
+.light-dim { flex: 1; accent-color: #f0a830; }
+
+/* Termostato dentro card: il componente Thermostat riempie */
+.card-thermo { padding: 12px; }
+.card-thermo .thermo { margin: 0; max-width: none; box-shadow: none; border: none; background: transparent;
+  backdrop-filter: none; -webkit-backdrop-filter: none; padding: 6px; }
+.room-tabs.inset { background: rgba(255,255,255,0.4); border-radius: 14px; margin-bottom: 4px; }
+
+/* Stato casa */
+.state-list { display: flex; flex-direction: column; gap: 12px; }
+.state-row { display: flex; align-items: center; gap: 10px; font-size: 0.92rem; color: var(--ink); }
+.state-row b { margin-left: auto; font-size: 0.7rem; font-weight: 600; color: var(--muted);
+  text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* Posizionamento card su griglia 3 colonne (come mockup) */
+.card-clock { grid-column: 1; } .card-hum { grid-column: 2; } .card-cons { grid-column: 3; }
+.card-lights { grid-column: 1; grid-row: span 2; }
+.card-thermo { grid-column: 2; grid-row: span 2; }
+.card-state { grid-column: 3; }
+
+/* Responsive: tablet 2 col, mobile 1 col */
+@media (max-width: 900px) {
+  .dash-grid { grid-template-columns: 1fr 1fr; }
+  .card-clock,.card-hum,.card-cons,.card-lights,.card-thermo,.card-state { grid-column: auto; grid-row: auto; }
+  .card-thermo,.card-lights { grid-column: 1 / -1; }
+}
+@media (max-width: 560px) {
+  .dash-grid { grid-template-columns: 1fr; }
+  .dash { padding: 12px 12px 84px; }
+  .clock-time { font-size: 2.8rem; }
+}
+
+/* ===========================================================================
+   LAYOUT FEDELE AL MOCKUP — sidebar + main + griglia per-stanza
+   =========================================================================== */
+.layout { display: flex; min-height: 100dvh; max-width: 1400px; margin: 0 auto; gap: 0; }
+
+/* Sidebar verticale */
+.sidebar {
+  flex: 0 0 72px; display: flex; flex-direction: column; align-items: center;
+  padding: 18px 0; gap: 22px;
+  background: var(--glass); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+  border-right: 1px solid var(--glass-hairline);
+}
+.side-logo { width: 42px; height: 42px; border-radius: 14px; background: #fff;
+  display: flex; align-items: center; justify-content: center; color: var(--indigo); box-shadow: var(--shadow-sm); }
+.side-nav { display: flex; flex-direction: column; gap: 8px; flex: 1; }
+.side-nav button, .side-bottom button {
+  width: 46px; height: 46px; border-radius: 14px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center;
+  transition: background .15s, color .15s;
+}
+.side-nav button:hover { color: var(--ink-soft); }
+.side-nav button.on { background: #fff; color: var(--indigo); box-shadow: var(--shadow-sm); }
+
+/* Main */
+.main { flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 18px 22px 18px; gap: 16px; }
+
+/* Topbar */
+.topbar { display: flex; align-items: center; gap: 14px; }
+.welcome { display: flex; align-items: center; gap: 11px; flex: 0 0 auto; }
+.avatar { width: 46px; height: 46px; border-radius: 50%; background: #fff; color: var(--indigo);
+  display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+.welcome-hi { font-size: 1.15rem; font-weight: 750; color: var(--ink); letter-spacing: -0.02em; }
+.welcome-sub { font-size: 0.78rem; color: var(--muted); }
+.searchbar { flex: 1; display: flex; align-items: center; gap: 8px; color: var(--muted);
+  background: var(--glass); border: 1px solid var(--glass-border); border-radius: 999px;
+  padding: 10px 16px; box-shadow: var(--shadow-sm); }
+.searchbar input { flex: 1; border: none; background: transparent; outline: none; color: var(--ink); font-size: 0.9rem; }
+.bell { width: 44px; height: 44px; border-radius: 50%; border: 1px solid var(--glass-border);
+  background: var(--glass); color: var(--ink-soft); cursor: pointer; display: flex; align-items: center; justify-content: center; box-shadow: var(--shadow-sm); }
+
+/* Griglia stanza */
+.room-grid {
+  flex: 1; display: grid; gap: 16px;
+  grid-template-columns: repeat(4, 1fr);
+  align-content: start;
+}
+.room-grid .card {
+  background: var(--glass); -webkit-backdrop-filter: blur(22px) saturate(150%); backdrop-filter: blur(22px) saturate(150%);
+  border: 1px solid var(--glass-border); border-radius: 22px; padding: 16px; box-shadow: var(--shadow-md);
+}
+.card-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
+.card-head h3 { margin: 0; font-size: 1rem; font-weight: 650; color: var(--ink); }
+.card-ic { width: 32px; height: 32px; border-radius: 10px; background: #fff; box-shadow: var(--shadow-sm);
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+
+/* mini-card riepilogo (riga in alto) */
+.mini-clock { display: flex; flex-direction: column; justify-content: center; }
+.mc-date { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.mc-time { font-size: 2.4rem; font-weight: 300; letter-spacing: -0.03em; color: var(--ink); line-height: 1; }
+.mini-stat { display: flex; align-items: center; gap: 11px; }
+.ms-val { font-size: 1.05rem; font-weight: 700; color: var(--ink); }
+.ms-lbl { font-size: 0.68rem; color: var(--muted); text-transform: uppercase; letter-spacing: 0.05em; }
+
+/* card grandi: termostato e luci occupano 2 colonne ciascuna */
+.span-thermo { grid-column: span 2; grid-row: span 2; padding: 12px; }
+.span-thermo .thermo { margin: 0; max-width: none; box-shadow: none; border: none; background: transparent;
+  backdrop-filter: none; -webkit-backdrop-filter: none; padding: 6px; }
+.span-lights { grid-column: span 2; grid-row: span 2; }
+
+/* Luci stanza */
+.rl-count { font-size: 0.78rem; color: var(--muted); margin-bottom: 10px; }
+.rl-list { display: flex; flex-direction: column; gap: 10px; }
+.rl-row { display: flex; align-items: center; gap: 12px; }
+.rl-name { display: inline-flex; align-items: center; gap: 7px; border: none; background: transparent; cursor: pointer;
+  color: var(--muted); font-size: 0.9rem; flex: 0 0 auto; min-width: 90px; }
+.rl-row.on .rl-name { color: var(--ink); }
+.rl-dim { flex: 1; accent-color: #f0a830; }
+.mini-switch { width: 42px; height: 24px; border-radius: 13px; background: #cdd5df; position: relative;
+  border: none; cursor: pointer; transition: background .2s; flex: 0 0 auto; margin-left: auto; }
+.mini-switch.on { background: #f0a830; }
+.mini-knob { position: absolute; top: 2px; left: 2px; width: 20px; height: 20px; border-radius: 50%; background: #fff; transition: left .2s; }
+.mini-switch.on .mini-knob { left: 20px; }
+
+/* Tab stanze in basso */
+.room-bar { display: flex; align-items: center; gap: 6px; padding: 8px;
+  background: var(--glass); border: 1px solid var(--glass-border); border-radius: 18px;
+  box-shadow: var(--shadow-sm); overflow-x: auto; }
+.room-bar button { flex: 0 0 auto; border: none; cursor: pointer; background: transparent;
+  color: var(--muted); font-size: 0.92rem; font-weight: 600; padding: 10px 18px; border-radius: 12px; white-space: nowrap; }
+.room-bar button.active { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+.room-add { margin-left: auto; width: 40px; height: 40px; border-radius: 50% !important; background: var(--indigo) !important; color: #fff !important;
+  display: flex; align-items: center; justify-content: center; flex: 0 0 auto; }
+
+/* Responsive */
+@media (max-width: 1000px) {
+  .room-grid { grid-template-columns: repeat(2, 1fr); }
+  .span-thermo, .span-lights { grid-column: span 2; grid-row: auto; }
+}
+@media (max-width: 640px) {
+  .sidebar { display: none; }
+  .room-grid { grid-template-columns: 1fr; }
+  .span-thermo, .span-lights { grid-column: 1; }
+  .searchbar { display: none; }
+  .main { padding: 14px 14px 18px; }
+}
+
+/* ===========================================================================
+   SIDEBAR = STANZE (override: sidebar larga con nomi stanza)
+   =========================================================================== */
+.sidebar { flex: 0 0 200px; align-items: stretch; padding: 16px 12px; gap: 14px; }
+.side-logo { align-self: center; }
+.side-rooms { display: flex; flex-direction: column; gap: 6px; flex: 1; overflow-y: auto; }
+.side-rooms button {
+  display: flex; align-items: center; gap: 10px; width: 100%;
+  border: none; cursor: pointer; background: transparent; color: var(--ink-soft);
+  padding: 11px 12px; border-radius: 14px; text-align: left; transition: background .15s, color .15s;
+}
+.side-rooms button:hover { background: rgba(255,255,255,0.5); }
+.side-rooms button.on { background: #fff; color: var(--ink); box-shadow: var(--shadow-sm); }
+.sr-name { font-size: 0.9rem; font-weight: 600; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.sr-meta { font-size: 0.66rem; color: var(--muted); flex: 0 0 auto; }
+.sr-add { color: var(--indigo) !important; }
+.side-sys { display: flex; gap: 6px; justify-content: center; padding-top: 10px; border-top: 1px solid var(--glass-hairline); }
+.side-sys button { width: 42px; height: 42px; border-radius: 12px; border: none; cursor: pointer;
+  background: transparent; color: var(--muted); display: flex; align-items: center; justify-content: center; }
+.side-sys button.on { background: #fff; color: var(--indigo); box-shadow: var(--shadow-sm); }
+
+/* su mobile: sidebar diventa barra orizzontale scrollabile in alto */
+@media (max-width: 640px) {
+  .sidebar { display: flex; flex: 0 0 auto; flex-direction: row; overflow-x: auto; padding: 10px; gap: 8px; align-items: center; }
+  .side-logo { display: none; }
+  .side-rooms { flex-direction: row; gap: 6px; }
+  .side-rooms button { flex: 0 0 auto; padding: 9px 14px; }
+  .sr-meta { display: none; }
+  .side-sys { border-top: none; border-left: 1px solid var(--glass-hairline); padding-left: 8px; }
+  .layout { flex-direction: column; }
+}
+
+/* ===========================================================================
+   RIFINITURA STILE iOS/MOCKUP (stanze restano in sidebar) — solo look
+   =========================================================================== */
+/* Sfondo: come il mockup, tinta pastello calda+fredda */
+body { background:
+  radial-gradient(1200px 600px at 80% -10%, rgba(180,190,255,0.35), transparent 55%),
+  radial-gradient(900px 500px at 0% 100%, rgba(255,210,180,0.25), transparent 55%),
+  linear-gradient(160deg, #e8eaf2 0%, #eef0f6 50%, #f3f0ee 100%) !important;
+}
+
+/* Tutto il layout come una grande lastra di vetro (come il mockup) */
+.layout {
+  margin: 22px auto; border-radius: 30px;
+  background: rgba(255,255,255,0.35);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 30px 80px -30px rgba(40,55,90,0.35);
+  -webkit-backdrop-filter: blur(30px) saturate(140%); backdrop-filter: blur(30px) saturate(140%);
+  overflow: hidden; min-height: calc(100dvh - 44px);
+}
+
+/* Sidebar stanze: pillola in vetro come il mockup */
+.sidebar {
+  background: rgba(255,255,255,0.28); border-right: 1px solid rgba(255,255,255,0.5);
+}
+.side-rooms button.on {
+  background: #fff; box-shadow: 0 8px 20px -8px rgba(40,55,90,0.3);
+}
+.side-rooms button .mdi { opacity: 0.85; }
+
+/* Card: vetro più morbido e luminoso, bordi arrotondati come iOS */
+.room-grid .card {
+  background: rgba(255,255,255,0.55);
+  border: 1px solid rgba(255,255,255,0.8);
+  border-radius: 26px;
+  box-shadow: 0 10px 30px -16px rgba(40,55,90,0.25), inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* Icone card: tondo bianco con ombra morbida (come il mockup) */
+.card-ic { width: 38px; height: 38px; border-radius: 50%;
+  box-shadow: 0 6px 14px -6px rgba(40,55,90,0.25); }
+
+/* Topbar: search a pillola larga, toggle e bell come il mockup */
+.searchbar { background: rgba(255,255,255,0.6); border-color: rgba(255,255,255,0.85); border-radius: 999px; padding: 12px 20px; }
+.theme-toggle { background: rgba(255,255,255,0.5); }
+.theme-toggle button.on { box-shadow: 0 6px 16px -8px rgba(240,168,48,0.5); }
+.avatar { box-shadow: 0 8px 20px -8px rgba(40,55,90,0.3); }
+.bell { background: rgba(255,255,255,0.6); }
+
+/* Anello umidità: gradiente come il mockup (giallo->verde) */
+.ring svg circle:last-child { stroke: url(#ringGrad); }
+
+/* ===========================================================================
+   SOFT-UI / NEUMORFISMO (come il mockup) — override aggressivo dello stile
+   Sidebar FLOTTANTE a pillola + ombre doppie morbide ovunque.
+   =========================================================================== */
+:root {
+  --soft-bg: #e8ebf2;          /* base neutra per le ombre soft */
+  --soft-light: rgba(255,255,255,0.9);
+  --soft-dark: rgba(40,55,90,0.13);
+}
+
+body { background:
+  radial-gradient(1100px 600px at 85% -5%, rgba(190,195,255,0.30), transparent 55%),
+  radial-gradient(800px 500px at -5% 105%, rgba(255,215,190,0.22), transparent 55%),
+  linear-gradient(155deg, #e6e9f1 0%, #edeef4 55%, #f1eeec 100%) !important;
+}
+
+/* La grande lastra contenitore */
+.layout {
+  margin: 20px auto; padding: 14px; gap: 14px;
+  border-radius: 36px;
+  background: rgba(255,255,255,0.30);
+  border: 1px solid rgba(255,255,255,0.65);
+  box-shadow: 0 40px 90px -40px rgba(40,55,90,0.4), inset 0 1px 0 rgba(255,255,255,0.8);
+  -webkit-backdrop-filter: blur(28px) saturate(140%); backdrop-filter: blur(28px) saturate(140%);
+  min-height: calc(100dvh - 40px);
+}
+
+/* === SIDEBAR FLOTTANTE A PILLOLA (come nel mockup) === */
+.sidebar {
+  flex: 0 0 78px; margin: 6px 0 6px 6px; padding: 18px 0;
+  align-items: center; gap: 18px;
+  border: none; border-radius: 44px;             /* <-- pillola tonda */
+  background: linear-gradient(180deg, rgba(255,255,255,0.7), rgba(232,236,244,0.55) 60%, rgba(120,130,160,0.35));
+  box-shadow:
+    -6px -6px 16px rgba(255,255,255,0.7),         /* luce in alto-sx */
+    8px 10px 24px -8px rgba(40,55,90,0.30),       /* ombra in basso-dx */
+    inset 0 1px 0 rgba(255,255,255,0.8);
+}
+.side-logo { width: 48px; height: 48px; border-radius: 50%; background: #fff;
+  box-shadow: -3px -3px 8px rgba(255,255,255,0.9), 4px 5px 12px -3px rgba(40,55,90,0.3); }
+
+/* stanze come icone tonde flottanti (testo nascosto, solo icona+tooltip) */
+.side-rooms { gap: 10px; flex: 1; justify-content: flex-start; width: 100%; align-items: center; padding-top: 4px; }
+.side-rooms button {
+  width: 64px; padding: 9px 4px; border-radius: 18px; flex-direction: column; gap: 4px;
+  justify-content: center; background: transparent; color: #5a6478; box-shadow: none; transition: all .2s;
+}
+.side-rooms button .sr-name {
+  display: block !important; font-size: 0.58rem; font-weight: 600; line-height: 1.1;
+  text-align: center; white-space: normal; overflow: visible; text-overflow: clip;
+}
+.side-rooms button .sr-meta { display: none; }
+.side-rooms button:hover { color: var(--ink); }
+.side-rooms button.on {
+  background: #fff; color: var(--indigo);
+  box-shadow: -3px -3px 8px rgba(255,255,255,0.9), 4px 6px 14px -3px rgba(40,55,90,0.35);
+}
+.sr-add .sr-name { color: var(--indigo); }
+
+.side-sys { flex-direction: column; gap: 10px; border: none; padding-top: 0; }
+.side-sys button { width: 44px; height: 44px; border-radius: 50%; color: #5a6478; }
+.side-sys button.on { background: #fff; color: var(--indigo);
+  box-shadow: -2px -2px 6px rgba(255,255,255,0.9), 3px 5px 12px -3px rgba(40,55,90,0.3); }
+
+/* === CARD soft-UI: niente bordi duri, ombre doppie morbide === */
+.room-grid .card, .card {
+  background: rgba(255,255,255,0.62);
+  border: 1px solid rgba(255,255,255,0.7);
+  border-radius: 28px;
+  box-shadow:
+    -5px -5px 14px rgba(255,255,255,0.6),
+    8px 10px 26px -10px rgba(40,55,90,0.22),
+    inset 0 1px 0 rgba(255,255,255,0.9);
+}
+
+/* icone-tonde delle card con rilievo soft */
+.card-ic { width: 40px; height: 40px; border-radius: 50%; background: #fff;
+  box-shadow: -2px -2px 6px rgba(255,255,255,0.9), 4px 5px 12px -4px rgba(40,55,90,0.28); }
+
+/* topbar elementi soft e tondi */
+.searchbar { background: rgba(255,255,255,0.55); border: none; border-radius: 999px; padding: 13px 22px;
+  box-shadow: inset 3px 3px 8px rgba(40,55,90,0.10), inset -3px -3px 8px rgba(255,255,255,0.8); }
+.theme-toggle { background: rgba(255,255,255,0.45); border-radius: 999px;
+  box-shadow: inset 2px 2px 6px rgba(40,55,90,0.08), inset -2px -2px 6px rgba(255,255,255,0.7); }
+.theme-toggle button.on { background: #fff; box-shadow: -2px -2px 6px rgba(255,255,255,0.9), 3px 4px 10px -3px rgba(240,168,48,0.45); }
+.avatar { box-shadow: -3px -3px 8px rgba(255,255,255,0.9), 4px 6px 14px -4px rgba(40,55,90,0.3); }
+.bell { background: rgba(255,255,255,0.6); border: none;
+  box-shadow: -2px -2px 6px rgba(255,255,255,0.9), 4px 5px 12px -4px rgba(40,55,90,0.28); }
+
+/* switch e slider con rilievo (soft) */
+.mini-switch { box-shadow: inset 2px 2px 5px rgba(40,55,90,0.15), inset -2px -2px 5px rgba(255,255,255,0.6); }
+.mini-knob { box-shadow: 2px 2px 5px rgba(40,55,90,0.25); }
+
+/* su mobile la sidebar resta tonda ma orizzontale */
+@media (max-width: 640px) {
+  .sidebar { flex-direction: row; border-radius: 30px; margin: 6px; flex: 0 0 auto; }
+  .side-rooms { flex-direction: row; }
+  .side-sys { flex-direction: row; }
+}
+
+/* ===========================================================================
+   APPLE LIQUID GLASS (ricetta verificata) — vetro VERO, non plastica
+   Chiave: trasparenza alta + saturate(180%) + highlight inset + bordo netto
+   =========================================================================== */
+
+/* Sfondo più ricco: il vetro deve avere qualcosa da rifrangere */
+body { background:
+  radial-gradient(900px 600px at 78% -8%, rgba(150,160,255,0.45), transparent 52%),
+  radial-gradient(700px 500px at 105% 60%, rgba(255,180,140,0.40), transparent 50%),
+  radial-gradient(800px 600px at -8% 110%, rgba(130,220,200,0.35), transparent 55%),
+  linear-gradient(150deg, #dfe3ee 0%, #e9eaf2 50%, #efeae6 100%) !important;
+}
+
+/* Lastra contenitore: vetro trasparente saturo */
+.layout {
+  background: rgba(255,255,255,0.14) !important;
+  -webkit-backdrop-filter: blur(20px) saturate(180%); backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.6) !important;
+  box-shadow: 0 30px 70px -30px rgba(31,38,90,0.35),
+              inset 0 4px 24px rgba(255,255,255,0.28) !important;
+}
+
+/* SIDEBAR a pillola: vetro vero */
+.sidebar {
+  background: rgba(255,255,255,0.16) !important;
+  -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.55) !important;
+  box-shadow: 0 8px 32px -8px rgba(31,38,90,0.28),
+              inset 0 3px 18px rgba(255,255,255,0.35) !important;
+}
+
+/* CARD: vetro trasparente con highlight superiore (firma Apple) */
+.room-grid .card, .card {
+  position: relative; overflow: hidden;
+  background: rgba(255,255,255,0.18) !important;
+  -webkit-backdrop-filter: blur(14px) saturate(180%); backdrop-filter: blur(14px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.6) !important;
+  box-shadow: 0 8px 32px -10px rgba(31,38,90,0.22),
+              inset 0 4px 20px rgba(255,255,255,0.30) !important;
+}
+/* layer di lucentezza liquida sul bordo (pseudo-element) */
+.room-grid .card::after, .card::after {
+  content: ''; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  box-shadow: inset -10px -8px 0 -11px rgba(255,255,255,0.9),
+              inset 0 -9px 0 -8px rgba(255,255,255,0.9);
+  filter: blur(1px) brightness(112%); opacity: 0.5;
+}
+
+/* elementi tondi (icone, avatar, bell): vetrino con highlight */
+.card-ic, .avatar, .bell, .side-logo {
+  background: rgba(255,255,255,0.55) !important;
+  -webkit-backdrop-filter: blur(8px) saturate(160%); backdrop-filter: blur(8px) saturate(160%);
+  border: 1px solid rgba(255,255,255,0.7);
+  box-shadow: 0 6px 16px -6px rgba(31,38,90,0.25), inset 0 2px 6px rgba(255,255,255,0.6) !important;
+}
+
+/* search e toggle: vetro incassato traslucido */
+.searchbar, .theme-toggle {
+  background: rgba(255,255,255,0.16) !important;
+  -webkit-backdrop-filter: blur(12px) saturate(170%); backdrop-filter: blur(12px) saturate(170%);
+  border: 1px solid rgba(255,255,255,0.5) !important;
+}
+.side-rooms button.on, .side-sys button.on, .theme-toggle button.on {
+  background: rgba(255,255,255,0.7) !important;
+  box-shadow: 0 6px 16px -6px rgba(31,38,90,0.3), inset 0 2px 6px rgba(255,255,255,0.7) !important;
+}
+
+/* ===========================================================================
+   CARD LUCI — coerente con lo stile SIDEBAR (vetro traslucido saturo, sobrio)
+   La card È il contenitore (niente doppia card). Tile e toggle iOS.
+   =========================================================================== */
+.lights-card {
+  grid-column: span 2; display: flex; flex-direction: column; gap: 12px;
+  padding: 16px; border-radius: 28px;
+  background: rgba(255,255,255,0.16);
+  -webkit-backdrop-filter: blur(16px) saturate(180%); backdrop-filter: blur(16px) saturate(180%);
+  border: 1px solid rgba(255,255,255,0.55);
+  box-shadow: 0 8px 32px -8px rgba(31,38,90,0.28), inset 0 3px 18px rgba(255,255,255,0.35);
+}
+.lc-head { display: flex; align-items: center; gap: 8px; color: var(--ink); font-weight: 650; font-size: 0.98rem; }
+.lc-head .mdi { color: var(--ink-soft); }
+.lc-head em { margin-left: auto; font-style: normal; font-size: 0.74rem; color: var(--muted); font-weight: 500; }
+
+.lc-tiles { display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); }
+.lc-tiles.single { grid-template-columns: 1fr; }
+
+/* tile: stesso vetro chiaro della pillola sidebar attiva (sobrio, non arancio) */
+.light-tile {
+  border-radius: 18px; padding: 14px; display: flex; flex-direction: column; gap: 9px;
+  background: rgba(255,255,255,0.30);
+  border: 1px solid rgba(255,255,255,0.5);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.6);
+  transition: background .2s, box-shadow .2s;
+}
+.light-tile.on {
+  background: #fff;
+  box-shadow: -3px -3px 8px rgba(255,255,255,0.7), 4px 6px 14px -6px rgba(31,38,90,0.22);
+}
+.lt-top { display: flex; align-items: center; justify-content: space-between; }
+.lt-ico { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  background: rgba(255,255,255,0.55); color: var(--muted);
+  box-shadow: inset 0 1px 3px rgba(255,255,255,0.7), 0 3px 8px -4px rgba(31,38,90,0.2); transition: color .2s; }
+.light-tile.on .lt-ico { color: var(--indigo); }   /* acceso = accento blu coerente */
+.lt-name { font-size: 0.9rem; font-weight: 600; color: var(--ink); }
+
+/* TOGGLE iOS — verde iOS (standard universale per on/off) */
+.ios-switch { width: 50px; height: 30px; border-radius: 16px; border: none; cursor: pointer; padding: 0;
+  background: rgba(120,130,160,0.28); position: relative; transition: background .25s; flex: 0 0 auto; }
+.ios-switch.on { background: #34c759; }
+.ios-knob { position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 50%;
+  background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.22); transition: left .25s; }
+.ios-switch.on .ios-knob { left: 23px; }
+
+/* dimmer coerente con accento blu */
+.lt-dim { display: flex; align-items: center; gap: 8px; }
+.lt-dim input[type="range"] { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 6px;
+  background: rgba(120,130,160,0.22); outline: none; }
+.lt-dim input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 18px; height: 18px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--indigo); box-shadow: 0 2px 5px rgba(0,0,0,0.18); cursor: pointer; }
+.lt-dim input:disabled { opacity: 0.4; }
+.lt-pct { font-size: 0.72rem; color: var(--muted); font-weight: 600; min-width: 30px; text-align: right; }
+
+@media (max-width: 1000px) { .lights-card { grid-column: span 2; } }
+@media (max-width: 640px) { .lights-card { grid-column: 1; } }
+
+/* Plafoniera singola: controlli direttamente nella card (NO tile annidata) */
+.lights-card.solo { gap: 14px; }
+.lights-card.solo.on { background: rgba(255,255,255,0.55); }
+.lc-solo-top { display: flex; align-items: center; gap: 12px; }
+.lc-solo-info { flex: 1; min-width: 0; }
+.lc-solo-info .lt-name { font-size: 1rem; }
+.lights-card.solo .lt-ico { width: 46px; height: 46px; }
+.lights-card.solo.on .lt-ico { color: var(--indigo); }
+.lc-solo-dim { -webkit-appearance: none; appearance: none; width: 100%; height: 7px; border-radius: 7px;
+  background: rgba(120,130,160,0.22); outline: none; }
+.lc-solo-dim::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
+  background: #fff; border: 2px solid var(--indigo); box-shadow: 0 2px 6px rgba(0,0,0,0.18); cursor: pointer; }
+.lc-solo-dim:disabled { opacity: 0.4; }
