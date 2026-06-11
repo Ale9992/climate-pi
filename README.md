@@ -2,6 +2,16 @@
 
 [🇮🇹 Italiano](README.it.md) · **🇬🇧 English**
 
+![Python](https://img.shields.io/badge/Python-3.11+-3776AB?logo=python&logoColor=white)
+![FastAPI](https://img.shields.io/badge/FastAPI-009688?logo=fastapi&logoColor=white)
+![React](https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=black)
+![Raspberry Pi](https://img.shields.io/badge/Raspberry%20Pi-ready-C51A4A?logo=raspberrypi&logoColor=white)
+![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)
+
+> **Self-hosted smart home for Panasonic air conditioners.** No vendor cloud
+> dashboards, no subscriptions — control your ACs by temperature, humidity,
+> season and presence, plus IKEA lights, all from one Raspberry Pi.
+
 A **self-hosted home climate automation** system that automatically controls
 **Panasonic** air conditioners based on temperature, humidity, season and
 **presence**, with an iOS-style web dashboard and **IKEA light** control.
