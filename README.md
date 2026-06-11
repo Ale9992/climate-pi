@@ -1,5 +1,7 @@
 # 🌡️ Climate Automation
 
+**🇮🇹 Italiano** · [🇬🇧 English](README.en.md)
+
 Sistema di **domotica climatica self-hosted** che governa automaticamente i
 condizionatori **Panasonic** in base a temperatura, umidità, stagione e
 **presenza** delle persone in casa — con dashboard web in stile iOS e controllo
