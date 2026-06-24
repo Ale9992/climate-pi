@@ -65,55 +65,75 @@ Luci IKEA Dirigera ────────────────────�
 
 ## 🧠 Controllo predittivo (MPC) — **beta, in sviluppo attivo**
 
-Sopra al rule engine reattivo, il progetto sta costruendo un cervello a **Model
-Predictive Control**. Non è un termostato che **reagisce** quando la stanza è già
-troppo calda: **guarda ore in avanti** e decide cosa fare *adesso* per mantenere
-il comfort spendendo meno energia possibile. Oggi gira in **modalità advisory**
-(prevede e consiglia, **non** comanda ancora gli AC) — scelta voluta: un sistema
-24/7 che protegge il comfort va dimostrato prima di affidargli il controllo.
+Sopra al rule engine reattivo si sta costruendo uno strato a **Model Predictive
+Control**. Invece di agire quando una stanza è già fuori comfort, a ogni passo
+risolve un problema di controllo ottimo a orizzonte finito: prevede la traiettoria
+termica delle ore successive e seleziona l'ingresso che mantiene il comfort al
+minimo costo energetico. Oggi opera **ad anello aperto (advisory)** — prevede e
+consiglia ma **non** comanda gli AC — scelta di sicurezza per un sistema 24/7.
 
-### Cosa fa
-Ogni 15 minuti, per ogni stanza sensorizzata, simula le 6 ore successive e un
-**arbitro** valuta le azioni candidate — `Off / Cool / Dry / Pre-raffrescamento`
-— scegliendo per priorità **temperatura → umidità → costo** (tariffa elettrica
-reale). Sa rispondere a: *"se non fai niente, tra quante ore questa stanza supera
-la soglia di comfort, e quanto costerebbe riportarla a posto?"*
+### Modello termico — grey-box a parametri concentrati (RC)
+Ogni stanza è un singolo nodo termico con due percorsi conduttivi, verso il resto
+della casa climatizzata e verso l'esterno:
 
-### Come funziona dentro
-- **Modello termico grey-box RC** (fisica, *non* una rete neurale black-box): a
-  2 conduttanze — stanza ↔ resto-casa e stanza ↔ esterno — con guadagni interni e
-  previsione **Open-Meteo**.
-- **Auto-calibrante**: impara i parametri di ogni stanza dagli *esperimenti
-  naturali* — la deriva libera quando l'AC è spento di notte o la stanza è vuota
-  — con un fit di traiettoria, senza taratura manuale.
-- Modello **umidità** accoppiato (psicrometrico) e modello di **occupazione** che
-  impara gli orari tipici di rientro (base per pre-raffrescare prima che torni a
-  casa).
-- Gira **interamente sul Raspberry Pi**, in locale, senza ML in cloud.
+$$ C\,\frac{dT}{dt} \;=\; UA_{house}\,(T_{house}-T) \;+\; UA_{ext}\,(T_{out}-T) \;+\; Q_{int} \;+\; Q_{solar} \;+\; Q_{ac} $$
 
-### Prove concrete che funziona (misurate su dati reali)
-- Legge il presente alla perfezione: temperatura *attuale* prevista-vs-reale
+con capacità termica $C$ [J/°C], conduttanze $UA$ [W/°C], flussi termici interni/
+solari/HVAC $Q$ [W], e costante di tempo $\tau = C/(UA_{house}+UA_{ext})$. $T_{out}$
+è una previsione **Open-Meteo**; $T_{house}$ dai sensori delle altre stanze. Dai
+dati ogni stanza si accoppia soprattutto al resto della casa (cinque superfici
+interne contro una parete esterna), quindi $UA_{house}\approx 2\text{–}3\,UA_{ext}$;
+confermato sulla risposta libera misurata (l'asintoto è vicino alla temperatura
+interna di casa, non a quella esterna).
+
+### Identificazione dei parametri — grey-box, auto-calibrante
+Le conduttanze strutturali $UA$ sono fissate dalla geometria; il guadagno efficace
+incerto $Q_{int}$ è identificato dagli **esperimenti naturali (risposta libera)** —
+la deriva ad anello aperto registrata quando l'AC è spento (fascia notturna, stanza
+vuota) — con un fit di traiettoria (output-error):
+
+$$ \hat{Q}_{int} \;=\; \arg\min_{Q}\ \sum_{k}\big(\,\hat{T}(t_k;Q)-T^{meas}(t_k)\,\big)^2 $$
+
+integrando il modello in avanti a passi di 5 min sui tratti ad AC spento. Nessuna
+taratura manuale; la stima si affina con l'accumulo di dati. Un **modello umidità
+psicrometrico** accoppiato e un **modello di occupazione** (stima orari di rientro)
+alimentano lo stesso ottimizzatore.
+
+### Formulazione del controllo
+Orizzonte mobile $H = 6$ h, passo $\Delta t = 15$ min, ingressi candidati discreti
+$u \in \{\text{Off, Cool, Dry, Pre-raffr.}\}$. Ogni candidato è simulato in avanti e
+la scelta è **multi-obiettivo lessicografica**: (1) tenere $T$ nella banda di
+comfort, (2) limitare l'umidità, (3) minimizzare il costo energetico
+$\sum |Q_{ac}|/\mathrm{COP}\cdot\Delta t \times \text{tariffa}$. In beta emette
+l'azione consigliata $u^\star$; l'attuazione ad anello chiuso resta dietro le regole
+di sicurezza esistenti.
+
+### Validazione (dati reali, hold-out)
+- **Stima di stato (nowcast)** — temperatura *attuale* prevista-vs-misurata:
   **MAE 0.02–0.04 °C**.
-- Il modello termico prevede la **deriva libera (AC spento)** a **~0.15 °C a +1h,
-  ~0.34 °C a +2h** (stanza col sensore a 0.1 °C) — **battendo la baseline ingenua
-  "resta uguale"** a ogni orizzonte.
-- Dopo l'auto-calibrazione il **bias della previsione a +6h** sulla stanza meglio
-  campionata è **−0.28 °C** (sotto il grado), e la previsione a lungo termine
-  combacia con la realtà vissuta (una stanza che senza AC, nei giorni caldi,
-  arriva davvero a ~32 °C).
+- **Predizione ad anello aperto a $k$ passi** su finestre ad AC spento:
+  **MAE ≈ 0.15 °C a $h=1$, ≈ 0.34 °C a $h=2$** (stanza con sensore a 0.1 °C),
+  **sotto la baseline di persistenza** $\hat{T}(t{+}h)=T(t)$ a ogni orizzonte —
+  cioè il modello porta informazione predittiva reale oltre il "resta uguale".
+- **Bias della previsione a +6 h post-calibrazione = −0.28 °C** (sotto il grado,
+  stanza ben campionata); la previsione a lungo termine è coerente con la risposta
+  libera misurata (≈ 32 °C senza AC nei giorni caldi).
+- *Limiti noti*: l'anello chiuso appiattisce l'eccitazione (poche derive ampie da
+  cui identificare); un RC del primo ordine sotto-modella la risposta a due costanti
+  di tempo (aria veloce / massa lenta); la quantizzazione a 1 °C limita
+  l'identificabilità dove presente.
 
-### In cosa è diverso dai termostati smart comuni
-| Sistemi tipici | Questo MPC |
+### Posizionamento rispetto ai termostati smart comuni
+| Convenzionali | Questo MPC |
 |---|---|
-| **Reattivo** (agisce quando è già caldo) | **Predittivo** (agisce prima, orizzonte 2–6h) |
-| ML black-box, affamato di dati, opaco | **Fisica grey-box**, interpretabile, parsimonioso |
-| Dipendente dal cloud / vendor lock-in | **100% locale su Raspberry Pi** |
-| Ottimizza comfort *oppure* energia | **Comfort *e* energia insieme**, tariffa reale |
-| Parametri fissi | **Auto-calibrante** dalle derive naturali |
+| Reattivo (feedback a comfort già violato) | Predittivo (orizzonte finito, 2–6 h) |
+| ML black-box — affamato di dati, opaco | Grey-box di principi primi — interpretabile, parsimonioso |
+| Cloud / vendor lock-in | Interamente on-device (Raspberry Pi), locale |
+| Comfort *oppure* energia | Comfort + energia congiunti, tariffa reale |
+| Parametri fissi | Auto-identificazione online dalle derive naturali |
 
-> ⚠️ **Beta**: l'MPC è solo advisory e in sviluppo attivo. I parametri si
-> affinano man mano che si accumulano dati; non controlla (ancora) gli AC in
-> autonomia.
+> ⚠️ **Beta**: solo advisory e in sviluppo attivo; i parametri si affinano con
+> l'accumulo di dati e il modello non comanda (ancora) gli AC in autonomia.
 
 ---
 
