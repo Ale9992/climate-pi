@@ -33,12 +33,12 @@ export default function RoomLights({ room, lights, onChange }) {
   if (list.length === 1) {
     const lt = list[0]
     return (
-      <div className={`lights-card solo ${lt.is_on ? 'on' : ''}`}>
+      <div className={`lights-card solo compact ${lt.is_on ? 'on' : ''}`}>
         <div className="lc-solo-top">
           <span className="lt-ico"><Icon path={iconOf(lt)} size={1.1} /></span>
           <div className="lc-solo-info">
             <div className="lt-name">{lt.name}</div>
-            <div className="muted small">{lt.is_on ? `${lt.level ?? 100}%` : 'spenta'}</div>
+            <div className="muted small">{lt.is_on ? `accesa · ${lt.level ?? 100}%` : 'spenta'}</div>
           </div>
           <button className={`ios-switch ${lt.is_on ? 'on' : ''}`}
             onClick={() => toggleOne(lt)} role="switch" aria-checked={lt.is_on}>

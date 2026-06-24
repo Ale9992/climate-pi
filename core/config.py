@@ -64,6 +64,7 @@ class Action:
     mode: Optional[str] = None          # Cool / Heat / Dry / Fan / Auto
     temperature: Optional[float] = None
     fan_speed: Optional[str] = None      # Auto / Low / Mid / High
+    eco_mode: Optional[str] = None       # Auto / Powerful / Quiet (boost vs silenzioso)
 
     def as_dict(self) -> dict[str, Any]:
         return {
@@ -71,6 +72,7 @@ class Action:
             "mode": self.mode,
             "temperature": self.temperature,
             "fan_speed": self.fan_speed,
+            "eco_mode": self.eco_mode,
         }
 
 
@@ -119,6 +121,22 @@ class Room:
     # IP di un device-presenza (telefono): se impostato, questa stanza segue la
     # presenza di QUELLA persona (non solo la presenza globale casa/vuota).
     presence_device_ip: Optional[str] = None
+    # MAC di un sensore SwitchBot Meter/THS1 (BLE): se impostato, una stanza
+    # senza sensore IKEA riceve T/umidita' indoor reali leggendo le advertisement
+    # BLE del sensore (lettura passiva, nessun pairing). Vedi switchbot_reader.
+    switchbot_mac: Optional[str] = None
+    # Endpoint HTTP di un nodo sensore remoto (es. Pi Zero con BME280/BH1750).
+    # Se presente, questa lettura ha precedenza sul sensore IKEA della stanza.
+    remote_sensor_url: Optional[str] = None
+    # Correzione lineare in punti percentuali per allineare l'RH del sensore
+    # remoto a un riferimento noto. Esempio: +11.6 se BME280 legge 53.4 e il
+    # riferimento della stanza legge 65.0 nello stesso punto.
+    remote_sensor_humidity_offset: float = 0.0
+    # Se True: alla PRIMA comparsa della persona di riferimento nella giornata,
+    # se la stanza e' calda, avvia l'AC in modalita' Powerful (raffreddamento
+    # rapido). Pensato per chi ha esigenze particolari (es. termoregolazione
+    # alterata): trova la stanza gia' fresca al rientro.
+    powerful_on_first_arrival: bool = False
 
 
 @dataclass
@@ -184,6 +202,29 @@ class PresenceSettings:
 
 
 @dataclass
+class Tariff:
+    """Tariffa elettrica REALE (dalla bolletta), per calcolare i costi veri.
+    Fonte unica: niente piu' stime gonfiate dal cloud Panasonic."""
+    variable_eur_kwh: float = 0.21    # quota consumi all-in (energia+rete+oneri), pre-IVA
+    vat_rate: float = 0.10            # IVA elettricita' domestica
+    fixed_monthly_eur: float = 10.92  # quota fissa (commercializzazione + rete)
+    power_eur_kw_month: float = 1.98  # quota potenza (per kW impegnato)
+    contracted_power_kw: float = 3.0
+    provider: str = ""
+    valid_until: str = ""
+
+    @property
+    def marginal_eur_kwh(self) -> float:
+        """Costo reale di 1 kWh IN PIU' (variabile + IVA): la cifra giusta per
+        stimare quanto costa accendere/spegnere l'AC."""
+        return round(self.variable_eur_kwh * (1.0 + self.vat_rate), 4)
+
+    def cost(self, kwh: float) -> float:
+        """Costo (€) dei kWh indicati, IVA inclusa (quote fisse escluse)."""
+        return kwh * self.marginal_eur_kwh
+
+
+@dataclass
 class Config:
     dirigera_ip: str
     dirigera_token: str
@@ -196,7 +237,12 @@ class Config:
     season: SeasonSettings
     presence: PresenceSettings
     lights: LightSettings
+    tariff: Tariff
     path: Path
+    # Coordinate per il meteo (Open-Meteo). Default generici (centro Italia); le
+    # proprie si mettono in config.yaml -> location: {latitude, longitude}.
+    latitude: float = 41.9
+    longitude: float = 12.5
 
     # -- helper di lookup ---------------------------------------------------
     def get_room(self, name: str) -> Optional[Room]:
@@ -230,6 +276,7 @@ def _parse_action(raw: dict[str, Any]) -> Action:
         mode=raw.get("mode"),
         temperature=raw.get("temperature"),
         fan_speed=raw.get("fan_speed"),
+        eco_mode=raw.get("eco_mode"),
     )
 
 
@@ -246,6 +293,11 @@ def _parse_room(raw: dict[str, Any]) -> Room:
         rules=rules,
         comfort=_parse_comfort(raw.get("comfort")),
         presence_device_ip=raw.get("presence_device_ip") or None,
+        switchbot_mac=raw.get("switchbot_mac") or None,
+        remote_sensor_url=raw.get("remote_sensor_url") or None,
+        remote_sensor_humidity_offset=float(
+            raw.get("remote_sensor_humidity_offset", 0.0) or 0.0),
+        powerful_on_first_arrival=bool(raw.get("powerful_on_first_arrival", False)),
     )
 
 
@@ -335,7 +387,22 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
         ceiling_rooms=list(lights_raw.get("ceiling_rooms") or []),
     )
 
+    t = raw.get("tariff", {}) or {}
+    tariff = Tariff(
+        variable_eur_kwh=float(t.get("variable_eur_kwh", 0.21)),
+        vat_rate=float(t.get("vat_rate", 0.10)),
+        fixed_monthly_eur=float(t.get("fixed_monthly_eur", 10.92)),
+        power_eur_kw_month=float(t.get("power_eur_kw_month", 1.98)),
+        contracted_power_kw=float(t.get("contracted_power_kw", 3.0)),
+        provider=str(t.get("provider", "")),
+        valid_until=str(t.get("valid_until", "")),
+    )
+
+    location = raw.get("location", {}) or {}
+
     return Config(
+        latitude=float(location.get("latitude", 41.9)),
+        longitude=float(location.get("longitude", 12.5)),
         dirigera_ip=dirigera.get("ip_address", ""),
         dirigera_token=dirigera.get("token", ""),
         panasonic_username=panasonic.get("username", ""),
@@ -347,6 +414,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
         season=season,
         presence=presence,
         lights=lights,
+        tariff=tariff,
         path=path,
     )
 
@@ -481,5 +549,12 @@ def redacted_config_dict(config: Config) -> dict[str, Any]:
                 {"name": d.name, "mac": d.mac, "ip": d.ip}
                 for d in config.presence.devices
             ],
+        },
+        "tariff": {
+            "variable_eur_kwh": config.tariff.variable_eur_kwh,
+            "vat_rate": config.tariff.vat_rate,
+            "fixed_monthly_eur": config.tariff.fixed_monthly_eur,
+            "power_eur_kw_month": config.tariff.power_eur_kw_month,
+            "marginal_eur_kwh": config.tariff.marginal_eur_kwh,
         },
     }

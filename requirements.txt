@@ -26,3 +26,6 @@ pydantic==2.13.4                     # gia' tirato da aio-panasonic-comfort-clou
 # --- HTTP / utility --------------------------------------------------------
 aiohttp==3.13.5                      # client async (usato dal layer Panasonic)
 fritzconnection==1.15.1
+
+# --- BLE -------------------------------------------------------------------
+bleak==3.0.2                         # lettura passiva sensori SwitchBot (switchbot_reader)

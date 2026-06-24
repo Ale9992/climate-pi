@@ -74,6 +74,58 @@ IKEA Dirigera lights ───────────────────�
 
 ---
 
+## 🧠 Predictive control (MPC) — **beta, in active development**
+
+On top of the reactive rule engine, the project is building a **Model Predictive
+Control** brain. It is **not a thermostat that reacts** once the room is already
+too hot — it **looks hours ahead** and decides what to do *now* to keep comfort
+while spending the least energy. Today it runs in **advisory mode** (it predicts
+and recommends, it does **not** yet take over the ACs) — this is deliberate: a
+24/7 system that protects comfort must be proven before it's given control.
+
+### What it does
+Every 15 minutes, for each sensored room, it simulates the next 6 hours and an
+**arbiter** evaluates the candidate actions — `Off / Cool / Dry / Pre-cool` —
+choosing by priority **temperature → humidity → cost** (real electricity tariff).
+It can answer: *"if you do nothing, in how many hours does this room cross the
+comfort ceiling, and what would it cost to bring it back?"*
+
+### How it works under the hood
+- **Grey-box RC thermal model** (physics, *not* a black-box neural net): a
+  2-conductance model — room ↔ rest-of-house and room ↔ outdoors — driven by
+  internal gains and an **Open-Meteo** forecast.
+- **Self-calibrating**: it learns each room's parameters from *natural
+  experiments* — the free drift when the AC is off at night or when a room is
+  empty — with a trajectory fit, no manual tuning.
+- Coupled **humidity model** (psychrometric) and an **occupancy model** that
+  learns typical arrival times (foundation for pre-cooling before you get home).
+- Runs **entirely on the Raspberry Pi**, locally, no cloud ML.
+
+### Concrete evidence it works (measured on real data)
+- Reads the present perfectly: predicted-vs-real *current* temperature **MAE
+  0.02–0.04 °C**.
+- The thermal model predicts the **free (AC-off) drift** to **~0.15 °C at +1h,
+  ~0.34 °C at +2h** (0.1 °C sensor room) — **beating the naive "it stays the
+  same" baseline** at every horizon.
+- After self-calibration the **+6h forecast bias** on the well-sampled room is
+  **−0.28 °C** (sub-degree), and its long-range prediction matches lived reality
+  (a room that, without AC, really does reach ~32 °C on hot days).
+
+### How it differs from typical smart-thermostats
+| Typical systems | This MPC |
+|---|---|
+| **Reactive** (act when it's already hot) | **Predictive** (act before, on a 2–6h horizon) |
+| Black-box ML, data-hungry, opaque | **Grey-box physics**, interpretable, data-efficient |
+| Cloud-dependent / vendor lock-in | **100% local on a Raspberry Pi** |
+| Optimize comfort *or* energy | **Comfort *and* energy jointly**, real tariff aware |
+| Fixed parameters | **Self-calibrating** from natural drifts |
+
+> ⚠️ **Beta**: the MPC is advisory-only and under active development. Parameters
+> keep being refined as more data accumulates; it is not (yet) controlling the
+> ACs autonomously.
+
+---
+
 ## 🧰 Tech stack
 
 | Layer | Technology |

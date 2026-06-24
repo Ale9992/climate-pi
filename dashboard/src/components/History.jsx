@@ -26,6 +26,8 @@ function RoomHistory({ room, hours }) {
   const valid = (data || []).filter((p) => p.temperature != null)
   const lastT = valid.length ? valid[valid.length - 1].temperature : null
   const lastH = valid.length ? valid[valid.length - 1].humidity : null
+  const lastP = valid.length ? valid[valid.length - 1].pressure : null
+  const lastLux = valid.length ? valid[valid.length - 1].lux : null
 
   return (
     <section className="hist-card">
@@ -34,6 +36,8 @@ function RoomHistory({ room, hours }) {
         {lastT != null && (
           <span className="hist-now">
             {lastT.toFixed(1)}°{lastH != null && <span className="muted"> · {Math.round(lastH)}%</span>}
+            {lastLux != null && <span className="muted"> · {Math.round(lastLux)} lx</span>}
+            {lastP != null && <span className="muted"> · {lastP.toFixed(1)} hPa</span>}
           </span>
         )}
       </div>
@@ -66,7 +70,7 @@ export default function History({ rooms }) {
         : withSensor.map((r) => <RoomHistory key={r.name} room={r} hours={hours} />)}
 
       <p className="hist-note muted small">
-        Linea piena: temperatura · tratteggiata: umidità · solo stanze con sensore IKEA.
+        Linea piena: temperatura · tratteggiata: umidità · lux/pressione come telemetria.
       </p>
     </div>
   )

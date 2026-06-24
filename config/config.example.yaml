@@ -3,6 +3,12 @@
 # I valori <...> vanno sostituiti. config.yaml è gitignorato (mai pubblicato).
 
 
+# Coordinate per il meteo (Open-Meteo). Metti le TUE: servono per la previsione
+# esterna usata dall'MPC. Se ometti il blocco, usa un default generico (centro Italia).
+location:
+  latitude: 41.9
+  longitude: 12.5
+
 dirigera:
   ip_address: "192.168.1.10"  # IP del tuo hub Dirigera
   token: "<IL_TUO_TOKEN_DIRIGERA>"  # generato dal mapping_tool
@@ -14,6 +20,13 @@ panasonic:
 rooms:
   - name: "Stanza da letto"
     ikea_sensor_id: "<SENSOR_ID_IKEA>"  # Sensore Aria
+    # Opzionale: endpoint HTTP di un nodo sensore remoto (es. Pi Zero con BME280).
+    # Se impostato, questa lettura ad alta precisione sostituisce l'IKEA per
+    # storico, automazione e MPC della stanza.
+    remote_sensor_url: ""
+    # Offset RH in punti percentuali, utile se il sensore remoto e' stabile ma
+    # legge diversamente dal riferimento nello stesso punto.
+    remote_sensor_humidity_offset: 0
     panasonic_device_id: "<DEVICE_ID_AC>"  # Camerina
     presence_device_ip: "192.168.1.50"  # il telefono che governa questa stanza
     # Modello COMFORT-BAND (energy-aware, con spegnimento automatico).

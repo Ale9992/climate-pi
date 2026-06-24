@@ -57,6 +57,12 @@ class _LastEmitted:
 # di temperatura (l'isteresi sui comandi e' garantita a valle dall'ACController).
 _FORCE_REEVAL_SECONDS = 300
 
+# Anti-usura SD: il WebSocket IKEA spinge una lettura ogni ~2s. Il rule engine la
+# riceve comunque in tempo reale (RAM); ma lo STORICO su DB va scritto di rado.
+# Scriviamo solo se il valore cambia OPPURE se e' passato questo intervallo
+# dall'ultima scrittura (heartbeat che attesta che il sensore e' vivo).
+_DB_WRITE_MIN_SECONDS = 60
+
 
 class SensorPoller:
     """Poller dei sensori ambiente con WebSocket + polling di fallback."""
@@ -68,11 +74,15 @@ class SensorPoller:
         self._engine = rule_engine
         # sensor_id -> room_name (solo stanze con sensore configurato).
         self._sensor_to_room: dict[str, str] = {
-            r.ikea_sensor_id: r.name for r in config.rooms if r.ikea_sensor_id
+            r.ikea_sensor_id: r.name
+            for r in config.rooms
+            if r.ikea_sensor_id and not getattr(r, "remote_sensor_url", None)
         }
         self._last: dict[str, _LastEmitted] = {
             r.name: _LastEmitted() for r in config.rooms
         }
+        # Ultima scrittura su DB per stanza: (temp, hum, monotonic). Throttle storico.
+        self._last_db: dict[str, tuple[Optional[float], Optional[float], float]] = {}
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._stop = asyncio.Event()
         self._tasks: list[asyncio.Task] = []
@@ -113,8 +123,22 @@ class SensorPoller:
                               temperature: Optional[float],
                               humidity: Optional[float]) -> None:
         """Salva la lettura e, se supera l'hysteresis, avvisa il rule engine."""
-        # 1) Storico: salva sempre.
-        await self._db.insert_sensor_reading(room_name, temperature, humidity)
+        now = time.monotonic()
+
+        # 1) Storico (anti-usura SD): throttle temporale. Scrive al massimo ogni
+        #    _DB_WRITE_MIN_SECONDS, PIU' subito su una variazione significativa di
+        #    TEMPERATURA (>= isteresi: la variabile di controllo). NON scrive sul
+        #    jitter di umidita' (IKEA oscilla +-1-2% di continuo) ne' su ogni push
+        #    WebSocket (~2s): il rule engine riceve comunque ogni lettura in RAM.
+        prev_db = self._last_db.get(room_name)
+        ht = self._cfg.engine.hysteresis_temp
+        sig_temp = (prev_db is not None and prev_db[0] is not None
+                    and temperature is not None
+                    and abs(temperature - prev_db[0]) >= ht)
+        elapsed_ok = prev_db is None or (now - prev_db[2]) >= _DB_WRITE_MIN_SECONDS
+        if elapsed_ok or sig_temp:
+            await self._db.insert_sensor_reading(room_name, temperature, humidity)
+            self._last_db[room_name] = (temperature, humidity, now)
 
         # 2) Hysteresis: inoltra al rule engine se cambia abbastanza, OPPURE se
         #    e' passato troppo tempo dall'ultima valutazione (rivalutazione
@@ -130,7 +154,6 @@ class SensorPoller:
                      and abs(temperature - last.temperature) >= ht)
         hum_jump = (humidity is not None and last.humidity is not None
                     and abs(humidity - last.humidity) >= hh)
-        now = time.monotonic()
         stale = (last.last_eval_monotonic > 0
                  and now - last.last_eval_monotonic >= _FORCE_REEVAL_SECONDS)
 

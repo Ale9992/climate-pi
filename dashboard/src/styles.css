@@ -194,6 +194,8 @@ body {
 /* L'umidità è secondaria: più piccola e tenue */
 .reading.secondary .val { font-size: 1.7rem; font-weight: 400; color: var(--ink-soft); }
 .reading.secondary .unit { font-size: 0.9rem; }
+.reading.tertiary .val { font-size: 1.15rem; font-weight: 500; color: var(--ink-soft); }
+.reading.tertiary .unit { font-size: 0.72rem; }
 /* Valore mancante: trattino discreto, non "rotto" */
 .reading .val.empty { color: var(--muted); font-weight: 200; opacity: 0.5; }
 
@@ -1245,6 +1247,7 @@ body { background:
   box-shadow: inset 3px 3px 8px rgba(40,55,90,0.10), inset -3px -3px 8px rgba(255,255,255,0.8); }
 .theme-toggle { background: rgba(255,255,255,0.45); border-radius: 999px;
   box-shadow: inset 2px 2px 6px rgba(40,55,90,0.08), inset -2px -2px 6px rgba(255,255,255,0.7); }
+.topbar .theme-toggle { margin-left: auto; }
 .theme-toggle button.on { background: #fff; box-shadow: -2px -2px 6px rgba(255,255,255,0.9), 3px 4px 10px -3px rgba(240,168,48,0.45); }
 .avatar { box-shadow: -3px -3px 8px rgba(255,255,255,0.9), 4px 6px 14px -4px rgba(40,55,90,0.3); }
 .bell { background: rgba(255,255,255,0.6); border: none;
@@ -1399,3 +1402,2367 @@ body { background:
 .lc-solo-dim::-webkit-slider-thumb { -webkit-appearance: none; width: 22px; height: 22px; border-radius: 50%;
   background: #fff; border: 2px solid var(--indigo); box-shadow: 0 2px 6px rgba(0,0,0,0.18); cursor: pointer; }
 .lc-solo-dim:disabled { opacity: 0.4; }
+
+/* ===========================================================================
+   DASHBOARD KIOSK — MacBook 1440x900, lettura a colpo d'occhio
+   =========================================================================== */
+.layout.kiosk {
+  max-width: 1440px;
+  min-height: 100dvh;
+  margin: 0 auto;
+  border-radius: 0;
+  padding: 20px;
+}
+
+.layout.kiosk .main {
+  padding: 22px 24px 20px;
+  gap: 18px;
+}
+
+.layout.kiosk .searchbar {
+  display: none;
+}
+
+.layout.kiosk .topbar {
+  gap: 18px;
+}
+
+.layout.kiosk .welcome {
+  min-width: 210px;
+}
+
+.layout.kiosk .welcome-hi {
+  font-size: 1.35rem;
+}
+
+.layout.kiosk .welcome-sub {
+  font-size: 0.9rem;
+}
+
+.layout.kiosk .room-grid {
+  grid-template-columns: 1.02fr 1.02fr 1fr 1fr;
+  grid-auto-rows: minmax(92px, auto);
+  gap: 18px;
+}
+
+.layout.kiosk .room-grid .card,
+.layout.kiosk .lights-card {
+  border-radius: 26px;
+}
+
+.layout.kiosk .mini-clock,
+.layout.kiosk .mini-stat {
+  min-height: 92px;
+}
+
+.layout.kiosk .mc-time {
+  font-size: 2.8rem;
+}
+
+.layout.kiosk .ms-val {
+  font-size: 1.18rem;
+}
+
+.layout.kiosk .ms-lbl {
+  font-size: 0.74rem;
+}
+
+.layout.kiosk .span-thermo {
+  grid-column: span 2;
+  grid-row: span 4;
+}
+
+.layout.kiosk .span-thermo .card-head h3 {
+  font-size: 1.1rem;
+}
+
+.layout.kiosk .thermo-set {
+  padding: 34px 0 24px;
+}
+
+.layout.kiosk .set-big {
+  font-size: 5.8rem;
+}
+
+.layout.kiosk .lights-card {
+  grid-column: span 2;
+  align-self: start;
+  min-height: 142px;
+}
+
+.layout.kiosk .lights-card.solo.compact {
+  min-height: 136px;
+  justify-content: center;
+}
+
+.layout.kiosk .lights-card.solo.compact .lc-solo-top {
+  gap: 14px;
+}
+
+.layout.kiosk .lights-card.solo.compact .lt-name {
+  font-size: 1.18rem;
+}
+
+.layout.kiosk .lights-card.solo.compact .lc-solo-dim {
+  margin-top: 4px;
+}
+
+.side-logo {
+  border: 1px solid rgba(255,255,255,0.7);
+  cursor: pointer;
+  transition: background .15s, color .15s, box-shadow .15s, transform .15s;
+}
+
+.side-logo.on {
+  color: var(--indigo);
+  background: rgba(255,255,255,0.82) !important;
+  box-shadow: 0 7px 18px -7px rgba(31,38,90,0.32), inset 0 2px 8px rgba(255,255,255,0.78) !important;
+}
+
+.side-logo:active {
+  transform: scale(0.96);
+}
+
+/* ===========================================================================
+   HOME OVERVIEW — schermata iniziale reale con meteo e stato casa
+   =========================================================================== */
+.home-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.2fr 1fr 1fr;
+  grid-auto-rows: minmax(132px, auto);
+  gap: 16px;
+  align-content: start;
+}
+
+.home-grid .card {
+  border-radius: 28px;
+}
+
+.home-hero {
+  grid-column: span 2;
+  min-height: 168px;
+  display: grid;
+  grid-template-columns: minmax(210px, 0.95fr) minmax(250px, 1.1fr) auto;
+  align-items: center;
+  gap: 18px;
+  padding: 24px 28px;
+}
+
+.home-kicker {
+  margin: 0 0 4px;
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 750;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.home-hero h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 2.5rem;
+  line-height: 1;
+  font-weight: 760;
+}
+
+.presence-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.presence-badges span {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 5px 10px;
+  border-radius: 999px;
+  color: var(--indigo);
+  background: rgba(142,84,255,0.13);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.42);
+  font-size: 0.72rem;
+  line-height: 1;
+  font-weight: 820;
+}
+
+.presence-badges.empty span {
+  color: var(--muted);
+  background: rgba(255,255,255,0.30);
+}
+
+.home-hero-summary {
+  display: inline-block;
+  margin-top: 9px;
+  color: var(--muted);
+  font-size: 0.92rem;
+  font-weight: 650;
+}
+
+.home-hero-insights {
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.hero-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hero-insight {
+  min-height: 46px;
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 10px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.34);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.42);
+  color: var(--indigo);
+}
+
+.hero-insight span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 760;
+  line-height: 1.05;
+  text-transform: uppercase;
+}
+
+.hero-insight strong {
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1;
+  font-weight: 820;
+}
+
+.home-hero-icon {
+  color: var(--indigo);
+  flex: 0 0 auto;
+}
+
+.weather-card {
+  min-height: 150px;
+  display: grid;
+  grid-template-columns: 1fr 1.25fr;
+  grid-template-rows: auto auto;
+  gap: 12px 16px;
+  align-items: center;
+}
+
+.weather-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.weather-icon {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #d38b24;
+  background: rgba(255,255,255,0.50);
+  box-shadow: inset 0 2px 7px rgba(255,255,255,0.72), 0 7px 18px -10px rgba(31,38,90,0.35);
+}
+
+.weather-main h3,
+.home-status-card h3,
+.home-system-card h3,
+.home-rooms-head h3 {
+  margin: 0;
+  color: var(--ink);
+  font-size: 1.05rem;
+  font-weight: 760;
+}
+
+.weather-main strong {
+  display: block;
+  margin-top: 3px;
+  color: var(--ink);
+  font-size: 2.4rem;
+  line-height: 1;
+  font-weight: 360;
+  font-variant-numeric: tabular-nums;
+}
+
+.weather-main p {
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.weather-meta {
+  grid-column: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 16px;
+  background: rgba(255,255,255,0.26);
+}
+
+.weather-meta span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.weather-meta strong {
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 750;
+}
+
+.weather-forecast {
+  grid-column: 2;
+  grid-row: 1 / 3;
+  display: grid;
+  grid-template-columns: repeat(8, minmax(0, 1fr));
+  align-items: end;
+  gap: 8px;
+  min-height: 76px;
+}
+
+.wf-point {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.wf-point span,
+.wf-point strong {
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 750;
+  font-variant-numeric: tabular-nums;
+}
+
+.wf-point strong {
+  color: var(--ink-soft);
+}
+
+.wf-point i {
+  width: 100%;
+  max-width: 18px;
+  min-height: 26px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #f0a868, #5b8def);
+  opacity: 0.82;
+}
+
+.home-status-card,
+.home-system-card {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 13px;
+}
+
+.home-stat-list {
+  display: grid;
+  gap: 9px;
+}
+
+.home-stat-list > div {
+  display: grid;
+  grid-template-columns: 26px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 14px;
+  background: rgba(255,255,255,0.24);
+}
+
+.home-stat-list svg {
+  color: var(--indigo);
+}
+
+.home-stat-list span {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.home-stat-list strong {
+  color: var(--ink);
+  font-size: 0.82rem;
+  font-weight: 780;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-rooms-card {
+  grid-column: span 3;
+  min-height: 220px;
+}
+
+.home-rooms-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.home-rooms-head span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.home-room-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+  gap: 10px;
+}
+
+.home-room-list button {
+  min-height: 76px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: auto auto;
+  gap: 6px 10px;
+  align-items: center;
+  border: 1px solid rgba(255,255,255,0.5);
+  border-radius: 18px;
+  padding: 12px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+  background: rgba(255,255,255,0.28);
+  font-family: inherit;
+  transition: background .15s, transform .15s, box-shadow .15s;
+}
+
+.home-room-list button:hover {
+  background: rgba(255,255,255,0.48);
+  box-shadow: 0 7px 18px -12px rgba(31,38,90,0.32);
+}
+
+.home-room-list button:active {
+  transform: scale(0.98);
+}
+
+.home-room-list span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.home-room-list strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.94rem;
+  font-weight: 760;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.home-room-list em {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 650;
+}
+
+.home-room-list b {
+  color: var(--ink);
+  font-size: 1.28rem;
+  font-weight: 420;
+  font-variant-numeric: tabular-nums;
+}
+
+.home-room-list i {
+  grid-column: 1 / -1;
+  justify-self: start;
+  padding: 4px 9px;
+  border-radius: 999px;
+  color: var(--muted);
+  background: rgba(120,130,160,0.14);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 780;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.home-room-list i.on {
+  color: #0f7a6e;
+  background: rgba(52,199,89,0.14);
+}
+
+.layout.kiosk .home-grid {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 44px minmax(150px, auto) minmax(150px, auto) minmax(132px, auto);
+  grid-auto-rows: minmax(132px, auto);
+  gap: 16px;
+}
+
+.layout.kiosk .hud-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.layout.kiosk .hud-badge {
+  min-height: 42px;
+  padding: 6px 10px;
+  border-radius: 15px;
+  grid-template-columns: 20px 1fr;
+  column-gap: 7px;
+}
+
+.layout.kiosk .hud-badge span {
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.layout.kiosk .hud-badge strong {
+  font-size: 0.78rem;
+  line-height: 1.05;
+}
+
+.layout.kiosk .home-hero {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  min-height: 150px;
+  grid-template-columns: minmax(210px, 0.92fr) minmax(250px, 1.08fr) auto;
+}
+
+.layout.kiosk .home-hero h2 {
+  font-size: 2.45rem;
+}
+
+.layout.kiosk .weather-card {
+  grid-column: 3 / 5;
+  grid-row: 2;
+  min-height: 150px;
+}
+
+.layout.kiosk .alerts-card {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.layout.kiosk .home-status-card {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.layout.kiosk .home-system-card {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.layout.kiosk .timeline-card {
+  grid-column: 4;
+  grid-row: 3;
+}
+
+.layout.kiosk .alerts-card,
+.layout.kiosk .home-status-card,
+.layout.kiosk .home-system-card,
+.layout.kiosk .timeline-card {
+  min-height: 150px;
+}
+
+.layout.kiosk .energy-ops-card {
+  grid-column: 1 / 3;
+  grid-row: 4;
+  min-height: 132px;
+}
+
+.layout.kiosk .home-rooms-card {
+  grid-column: 3 / 5;
+  grid-row: 4;
+  min-height: 132px;
+}
+
+.layout.kiosk .home-room-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layout.kiosk .home-room-list button {
+  min-height: 64px;
+}
+
+.layout.kiosk .home-room-list b {
+  font-size: 1.12rem;
+}
+
+.layout.kiosk .weather-forecast {
+  min-height: 84px;
+}
+
+.layout.kiosk .weather-main strong {
+  font-size: 2.1rem;
+}
+
+.layout.kiosk .home-stat-list,
+.layout.kiosk .system-list,
+.layout.kiosk .alert-list,
+.layout.kiosk .timeline-list,
+.layout.kiosk .energy-bars {
+  gap: 7px;
+}
+
+.layout.kiosk .home-stat-list > div,
+.layout.kiosk .system-list > div {
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.layout.kiosk .energy-row {
+  grid-template-columns: 124px 1fr 80px;
+}
+
+.layout.kiosk .energy-splitline {
+  margin-top: 10px;
+  padding-top: 9px;
+}
+
+.home-grid {
+  grid-template-columns: 1fr 1fr 1fr 1fr;
+  grid-template-rows: 44px minmax(150px, auto) minmax(150px, auto) minmax(132px, auto);
+  grid-auto-rows: minmax(132px, auto);
+  gap: 16px;
+}
+
+.home-grid .hud-strip {
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+}
+
+.home-grid .hud-badge {
+  min-height: 42px;
+  padding: 6px 10px;
+  border-radius: 15px;
+  grid-template-columns: 20px 1fr;
+  column-gap: 7px;
+}
+
+.home-grid .hud-badge span {
+  font-size: 0.58rem;
+  line-height: 1;
+}
+
+.home-grid .hud-badge strong {
+  font-size: 0.78rem;
+  line-height: 1.05;
+}
+
+.home-grid .home-hero {
+  grid-column: 1 / 3;
+  grid-row: 2;
+  min-height: 150px;
+  grid-template-columns: minmax(210px, 0.92fr) minmax(250px, 1.08fr) auto;
+}
+
+.home-grid .home-hero h2 {
+  font-size: 2.45rem;
+}
+
+.home-grid .weather-card {
+  grid-column: 3 / 5;
+  grid-row: 2;
+  min-height: 150px;
+}
+
+.home-grid .alerts-card {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.home-grid .home-status-card {
+  grid-column: 1;
+  grid-row: 3;
+}
+
+.home-grid .home-system-card {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+.home-grid .timeline-card {
+  grid-column: 4;
+  grid-row: 3;
+}
+
+.home-grid .alerts-card,
+.home-grid .home-status-card,
+.home-grid .home-system-card,
+.home-grid .timeline-card {
+  min-height: 150px;
+}
+
+.home-grid .energy-ops-card {
+  grid-column: 1 / 3;
+  grid-row: 4;
+  min-height: 132px;
+}
+
+.home-grid .home-rooms-card {
+  grid-column: 3 / 5;
+  grid-row: 4;
+  min-height: 132px;
+}
+
+.home-grid .home-room-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.home-grid .home-room-list button {
+  min-height: 64px;
+}
+
+.home-grid .home-room-list b {
+  font-size: 1.12rem;
+}
+
+.home-grid .weather-forecast {
+  min-height: 56px;
+  margin-top: auto;
+}
+
+.home-grid .weather-main strong {
+  font-size: 2rem;
+}
+
+.home-grid .home-stat-list,
+.home-grid .system-list,
+.home-grid .alert-list,
+.home-grid .timeline-list,
+.home-grid .energy-bars {
+  gap: 7px;
+}
+
+.home-grid .home-stat-list > div,
+.home-grid .system-list > div {
+  min-height: 32px;
+  padding: 6px 9px;
+}
+
+.home-grid .energy-row {
+  grid-template-columns: 124px 1fr 80px;
+}
+
+.home-grid .energy-splitline {
+  margin-top: 10px;
+  padding-top: 9px;
+}
+
+.hud-strip {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.hud-badge {
+  min-height: 58px;
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+  padding: 10px 12px;
+  border-radius: 18px;
+  background: rgba(255,255,255,0.24);
+  border: 1px solid rgba(255,255,255,0.48);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.55);
+}
+
+.hud-badge svg {
+  grid-row: span 2;
+  color: var(--muted);
+}
+
+.hud-badge span {
+  color: var(--muted);
+  font-size: 0.66rem;
+  font-weight: 760;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.hud-badge strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.86rem;
+  font-weight: 780;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.hud-badge.ok svg { color: #2f9e8f; }
+.hud-badge.warn svg { color: #c4631e; }
+
+.alerts-card,
+.timeline-card {
+  min-height: 220px;
+}
+
+.alerts-card.clear {
+  display: flex;
+  flex-direction: column;
+}
+
+.all-clear {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 128px;
+  color: #2f9e8f;
+  text-align: center;
+}
+
+.all-clear strong {
+  color: var(--ink);
+  font-size: 1rem;
+  font-weight: 780;
+}
+
+.all-clear span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.alert-list,
+.timeline-list {
+  display: grid;
+  gap: 9px;
+}
+
+.alert-list > div {
+  display: grid;
+  grid-template-columns: 26px 1fr;
+  align-items: center;
+  gap: 9px;
+  min-height: 46px;
+  padding: 9px 10px;
+  border-radius: 15px;
+  background: rgba(255,255,255,0.24);
+}
+
+.alert-list svg {
+  color: #c4631e;
+}
+
+.alert-list span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.alert-list strong {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 760;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.alert-list em {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-style: normal;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.energy-ops-card {
+  grid-column: span 2;
+  min-height: 220px;
+}
+
+.energy-bars {
+  display: grid;
+  gap: 10px;
+}
+
+.energy-row {
+  display: grid;
+  grid-template-columns: 124px 1fr 84px;
+  align-items: center;
+  gap: 10px;
+}
+
+.energy-row span {
+  overflow: hidden;
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.energy-row i {
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(120,130,160,0.18);
+}
+
+.energy-row b {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--indigo), var(--mint));
+}
+
+.energy-row strong {
+  color: var(--ink);
+  font-size: 0.78rem;
+  font-weight: 780;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.energy-splitline {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--glass-hairline);
+  color: var(--muted);
+  font-size: 0.76rem;
+  font-weight: 700;
+}
+
+.energy-splitline strong {
+  margin-left: auto;
+  color: var(--ink);
+  font-size: 0.92rem;
+}
+
+.timeline-list > div {
+  display: grid;
+  grid-template-columns: 14px 1fr auto;
+  align-items: center;
+  gap: 9px;
+  min-height: 36px;
+}
+
+.timeline-list i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--indigo);
+  box-shadow: 0 0 0 5px rgba(91,141,239,0.12);
+}
+
+.timeline-list span {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.timeline-list strong {
+  color: var(--ink);
+  font-size: 0.76rem;
+  font-weight: 760;
+}
+
+.timeline-list em {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-style: normal;
+  font-weight: 650;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.timeline-list b,
+.timeline-empty {
+  color: var(--muted);
+  font-size: 0.7rem;
+  font-weight: 720;
+}
+
+.environment-card {
+  grid-column: span 1;
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.env-card-head,
+.system-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.env-card-head h3,
+.system-head h3 {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 760;
+  color: var(--ink);
+}
+
+.env-card-head p,
+.system-head p {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 0;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+}
+
+.status-dot {
+  width: 12px;
+  height: 12px;
+  margin-top: 5px;
+  border-radius: 50%;
+  flex: 0 0 auto;
+}
+
+.status-dot.ok {
+  background: #34c759;
+  box-shadow: 0 0 0 5px rgba(52, 199, 89, 0.13);
+}
+
+.status-dot.warn {
+  background: #f0a830;
+  box-shadow: 0 0 0 5px rgba(240, 168, 48, 0.14);
+}
+
+.env-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.env-metric {
+  min-height: 76px;
+  padding: 12px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.28);
+  border: 1px solid rgba(255,255,255,0.45);
+  display: grid;
+  grid-template-columns: auto 1fr;
+  grid-template-rows: auto auto;
+  align-items: center;
+  column-gap: 8px;
+}
+
+.env-metric svg {
+  grid-row: span 2;
+  color: var(--muted);
+}
+
+.env-metric strong {
+  color: var(--ink);
+  font-size: 1.12rem;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.env-metric span {
+  color: var(--muted);
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-weight: 700;
+}
+
+.env-metric.primary {
+  grid-column: span 2;
+  min-height: 86px;
+}
+
+.env-metric.primary strong {
+  font-size: 2rem;
+}
+
+.env-metric.ok svg { color: #2f9e8f; }
+.env-metric.warn svg { color: #d38b24; }
+
+.system-card {
+  min-height: 220px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.system-head > svg {
+  color: var(--indigo);
+  margin-top: 4px;
+}
+
+.system-list {
+  display: grid;
+  gap: 8px;
+}
+
+.system-list > div {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  align-items: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 7px 9px;
+  border-radius: 13px;
+  background: rgba(255, 255, 255, 0.24);
+  color: var(--muted);
+}
+
+.system-list > div.ok svg,
+.system-list > div.ok strong {
+  color: #2f9e8f;
+}
+
+.system-list > div.warn svg,
+.system-list > div.warn strong {
+  color: #c4631e;
+}
+
+.system-list span {
+  font-size: 0.78rem;
+  font-weight: 650;
+  color: var(--ink-soft);
+}
+
+.system-list strong {
+  font-size: 0.76rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+@media (max-width: 1000px) {
+  .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hud-strip {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .home-hero,
+  .home-rooms-card,
+  .energy-ops-card {
+    grid-column: 1 / -1;
+  }
+
+  .home-hero {
+    grid-template-columns: minmax(220px, 0.8fr) 1fr;
+  }
+
+  .home-hero-icon {
+    display: none;
+  }
+
+  .weather-card {
+    grid-row: auto;
+  }
+
+  .environment-card,
+  .system-card {
+    grid-column: span 1;
+  }
+}
+
+@media (max-width: 640px) {
+  .home-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-hero,
+  .weather-card,
+  .home-status-card,
+  .home-system-card,
+  .alerts-card,
+  .energy-ops-card,
+  .timeline-card,
+  .home-rooms-card {
+    grid-column: 1;
+  }
+
+  .hud-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .home-hero h2 {
+    font-size: 2rem;
+  }
+
+  .home-hero {
+    grid-template-columns: 1fr;
+    padding: 22px;
+  }
+
+  .hero-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .energy-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+
+  .weather-forecast {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+
+  .environment-card,
+  .system-card {
+    grid-column: 1;
+  }
+}
+
+/* ===========================================================================
+   DARK MODE — override finale per il tema liquid glass
+   =========================================================================== */
+[data-theme="dark"] {
+  --sky-1: #111827;
+  --sky-2: #172033;
+  --sky-3: #0b1020;
+  --glass: rgba(20, 28, 45, 0.58);
+  --glass-strong: rgba(28, 38, 58, 0.76);
+  --glass-border: rgba(170, 188, 230, 0.20);
+  --glass-hairline: rgba(185, 201, 235, 0.16);
+  --ink: #edf4ff;
+  --ink-soft: #c3d2ea;
+  --muted: #8fa1bd;
+  --indigo: #8aa8ff;
+  --indigo-ink: #d6e2ff;
+  --mint: #54d6c8;
+  --mint-soft: rgba(84, 214, 200, 0.16);
+  --warm-soft: rgba(240, 168, 104, 0.16);
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.24), 0 8px 18px rgba(0, 0, 0, 0.18);
+  --shadow-md: 0 12px 34px -18px rgba(0, 0, 0, 0.75), inset 0 1px 0 rgba(255,255,255,0.08);
+  --shadow-glow: 0 10px 40px rgba(93, 127, 220, 0.16);
+}
+
+[data-theme="dark"] body {
+  background:
+    radial-gradient(900px 600px at 78% -8%, rgba(94, 110, 210, 0.28), transparent 52%),
+    radial-gradient(700px 500px at 105% 60%, rgba(215, 118, 84, 0.16), transparent 50%),
+    radial-gradient(800px 600px at -8% 110%, rgba(45, 172, 158, 0.16), transparent 55%),
+    linear-gradient(150deg, #0b1020 0%, #111827 52%, #171b2a 100%) !important;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .layout {
+  background: rgba(10, 16, 30, 0.48) !important;
+  border-color: rgba(170, 188, 230, 0.18) !important;
+  box-shadow: 0 34px 90px -38px rgba(0, 0, 0, 0.9),
+              inset 0 4px 24px rgba(255,255,255,0.06) !important;
+}
+
+[data-theme="dark"] .sidebar,
+[data-theme="dark"] .card,
+[data-theme="dark"] .room-grid .card,
+[data-theme="dark"] .lights-card {
+  background: rgba(22, 30, 48, 0.58) !important;
+  border-color: rgba(170, 188, 230, 0.18) !important;
+  box-shadow: 0 12px 34px -18px rgba(0, 0, 0, 0.8),
+              inset 0 3px 18px rgba(255,255,255,0.06) !important;
+}
+
+[data-theme="dark"] .card::after,
+[data-theme="dark"] .room-grid .card::after {
+  opacity: 0.16;
+}
+
+[data-theme="dark"] .avatar,
+[data-theme="dark"] .bell,
+[data-theme="dark"] .side-logo,
+[data-theme="dark"] .card-ic,
+[data-theme="dark"] .weather-icon,
+[data-theme="dark"] .lt-ico {
+  background: rgba(34, 45, 68, 0.78) !important;
+  border-color: rgba(185, 201, 235, 0.18);
+  color: var(--indigo);
+  box-shadow: 0 8px 20px -12px rgba(0, 0, 0, 0.85),
+              inset 0 2px 8px rgba(255,255,255,0.08) !important;
+}
+
+[data-theme="dark"] .side-logo.on,
+[data-theme="dark"] .side-rooms button.on,
+[data-theme="dark"] .side-sys button.on,
+[data-theme="dark"] .theme-toggle button.on {
+  background: rgba(56, 72, 105, 0.86) !important;
+  color: #ffffff;
+  box-shadow: 0 10px 22px -14px rgba(0, 0, 0, 0.9),
+              inset 0 2px 8px rgba(255,255,255,0.12) !important;
+}
+
+[data-theme="dark"] .theme-toggle,
+[data-theme="dark"] .weather-meta,
+[data-theme="dark"] .home-stat-list > div,
+[data-theme="dark"] .system-list > div,
+[data-theme="dark"] .env-metric,
+[data-theme="dark"] .hud-badge,
+[data-theme="dark"] .alert-list > div,
+[data-theme="dark"] .home-room-list button,
+[data-theme="dark"] .light-tile,
+[data-theme="dark"] input,
+[data-theme="dark"] select {
+  background: rgba(12, 18, 32, 0.38) !important;
+  border-color: rgba(185, 201, 235, 0.14) !important;
+  color: var(--ink);
+}
+
+[data-theme="dark"] .home-room-list button:hover,
+[data-theme="dark"] .light-tile.on,
+[data-theme="dark"] .range-pick button.active,
+[data-theme="dark"] .chip.active,
+[data-theme="dark"] .bar-btn.active {
+  background: rgba(48, 62, 92, 0.78) !important;
+}
+
+[data-theme="dark"] .wf-point i {
+  background: linear-gradient(180deg, #f0a868, #8aa8ff);
+}
+
+[data-theme="dark"] .ios-switch,
+[data-theme="dark"] .mini-switch {
+  background: rgba(130, 145, 176, 0.34);
+}
+
+[data-theme="dark"] .ios-switch.on,
+[data-theme="dark"] .mini-switch.on {
+  background: #34c759;
+}
+
+[data-theme="dark"] .ios-knob,
+[data-theme="dark"] .mini-knob {
+  background: #f8fbff;
+}
+
+.layout.kiosk .home-grid .weather-card,
+.home-grid .weather-card {
+  grid-column: 3 / 5;
+  grid-row: 2;
+  min-height: 150px;
+}
+
+.layout.kiosk .home-grid .alerts-card,
+.home-grid .alerts-card {
+  grid-column: 3;
+  grid-row: 3;
+}
+
+.layout.kiosk .home-grid .timeline-card,
+.home-grid .timeline-card {
+  grid-column: 4;
+  grid-row: 3;
+}
+
+/* ===========================================================================
+   TOUCH TABLET — iPad 7a gen 10.2" / uso corridoio
+   Stessa dashboard, controlli piu' grandi e layout 4:3.
+   =========================================================================== */
+.layout.touch {
+  width: 100%;
+  max-width: none;
+  min-height: 100dvh;
+  margin: 0;
+  border-radius: 0;
+  padding: max(10px, env(safe-area-inset-top)) max(12px, env(safe-area-inset-right)) max(12px, env(safe-area-inset-bottom)) max(12px, env(safe-area-inset-left));
+  flex-direction: column;
+  gap: 10px;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.layout.touch .sidebar {
+  flex: 0 0 auto;
+  min-height: 72px;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  padding: 10px;
+  border-radius: 24px;
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.layout.touch .sidebar::-webkit-scrollbar,
+.layout.touch .side-rooms::-webkit-scrollbar {
+  display: none;
+}
+
+.layout.touch .side-logo {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 52px;
+  border-radius: 18px;
+}
+
+.layout.touch .side-rooms {
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  padding: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.layout.touch .side-rooms button {
+  min-width: 112px;
+  min-height: 52px;
+  flex: 0 0 auto;
+  padding: 10px 13px;
+  border-radius: 18px;
+}
+
+.layout.touch .sr-name {
+  font-size: 0.86rem;
+}
+
+.layout.touch .sr-meta {
+  display: none;
+}
+
+.layout.touch .side-sys {
+  flex: 0 0 auto;
+  gap: 8px;
+  padding: 0 0 0 10px;
+  border-top: none;
+  border-left: 1px solid var(--glass-hairline);
+}
+
+.layout.touch .side-sys button,
+.layout.touch .bell,
+.layout.touch .theme-toggle button {
+  min-width: 48px;
+  min-height: 48px;
+}
+
+.layout.touch .main {
+  padding: 0;
+  gap: 12px;
+}
+
+.layout.touch .topbar {
+  min-height: 58px;
+  gap: 12px;
+}
+
+.layout.touch .welcome {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.layout.touch .avatar {
+  width: 50px;
+  height: 50px;
+}
+
+.layout.touch .welcome-hi {
+  font-size: 1.24rem;
+}
+
+.layout.touch .welcome-sub {
+  font-size: 0.84rem;
+}
+
+.layout.touch .theme-toggle {
+  flex: 0 0 auto;
+}
+
+.layout.touch .theme-toggle button {
+  padding: 0 14px;
+  border-radius: 18px;
+  font-size: 0.9rem;
+}
+
+.layout.touch button,
+.layout.touch input[type="range"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+.layout.touch .card,
+.layout.touch .room-grid .card,
+.layout.touch .lights-card {
+  border-radius: 24px;
+}
+
+.layout.touch .home-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(138px, auto);
+  grid-template-rows: auto;
+  gap: 12px;
+}
+
+.layout.touch .hud-strip {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.layout.touch .hud-badge {
+  min-height: 56px;
+  padding: 9px 11px;
+}
+
+.layout.touch .home-grid .home-hero,
+.layout.touch .home-grid .weather-card,
+.layout.touch .home-grid .energy-ops-card,
+.layout.touch .home-grid .home-rooms-card {
+  grid-column: 1 / -1;
+  grid-row: auto;
+}
+
+.layout.touch .home-grid .alerts-card,
+.layout.touch .home-grid .home-status-card,
+.layout.touch .home-grid .home-system-card,
+.layout.touch .home-grid .timeline-card {
+  grid-column: auto;
+  grid-row: auto;
+  min-height: 154px;
+}
+
+.layout.touch .home-grid .home-hero {
+  min-height: 156px;
+  grid-template-columns: minmax(220px, 0.82fr) 1fr;
+  padding: 22px 24px;
+}
+
+.layout.touch .home-hero h2 {
+  font-size: 2.2rem;
+}
+
+.layout.touch .home-hero-icon {
+  display: none;
+}
+
+.layout.touch .home-hero-insights {
+  gap: 9px;
+}
+
+.layout.touch .hero-insight {
+  min-height: 48px;
+}
+
+.layout.touch .weather-card {
+  grid-template-columns: minmax(210px, 0.72fr) 1fr;
+  min-height: 142px;
+}
+
+.layout.touch .weather-forecast {
+  min-height: 68px;
+}
+
+.layout.touch .home-room-list button {
+  min-height: 76px;
+  padding: 12px;
+}
+
+.layout.touch .home-room-list strong,
+.layout.touch .home-room-list b {
+  font-size: 1rem;
+}
+
+.layout.touch .room-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-auto-rows: minmax(108px, auto);
+  gap: 12px;
+}
+
+.layout.touch .mini-clock,
+.layout.touch .mini-stat {
+  min-height: 102px;
+}
+
+.layout.touch .span-thermo,
+.layout.touch .lights-card {
+  grid-column: 1 / -1;
+  grid-row: auto;
+}
+
+.layout.touch .span-thermo {
+  min-height: 420px;
+}
+
+.layout.touch .span-thermo .thermo {
+  padding: 8px 10px 10px;
+}
+
+.layout.touch .thermo-top {
+  gap: 10px;
+}
+
+.layout.touch .env-chip,
+.layout.touch .nanoe {
+  min-height: 48px;
+}
+
+.layout.touch .thermo-set {
+  padding: 28px 0 20px;
+}
+
+.layout.touch .set-big {
+  font-size: clamp(4.8rem, 10vw, 6.4rem);
+}
+
+.layout.touch .thermo-slider {
+  gap: 14px;
+}
+
+.layout.touch .thermo-slider .round,
+.layout.touch .bar-btn,
+.layout.touch .eco-btn,
+.layout.touch .ios-switch {
+  min-width: 52px;
+  min-height: 52px;
+}
+
+.layout.touch .thermo-slider input[type="range"],
+.layout.touch .lc-solo-dim,
+.layout.touch .lt-dim input[type="range"] {
+  min-height: 38px;
+}
+
+.layout.touch .thermo-bar {
+  gap: 10px;
+}
+
+.layout.touch .bar-btn {
+  border-radius: 18px;
+}
+
+.layout.touch .bar-sub {
+  font-size: 0.72rem;
+}
+
+.layout.touch .eco-row {
+  gap: 10px;
+}
+
+.layout.touch .eco-btn {
+  padding: 0 18px;
+  border-radius: 18px;
+}
+
+.layout.touch .lights-card {
+  min-height: 150px;
+}
+
+.layout.touch .lc-solo-top {
+  gap: 14px;
+}
+
+.layout.touch .lights-card.solo .lt-ico {
+  width: 54px;
+  height: 54px;
+}
+
+.layout.touch .ios-switch {
+  width: 64px;
+  height: 38px;
+  border-radius: 20px;
+}
+
+.layout.touch .ios-knob {
+  width: 32px;
+  height: 32px;
+}
+
+.layout.touch .ios-switch.on .ios-knob {
+  left: 29px;
+}
+
+.layout.touch .lc-tiles {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.layout.touch .light-tile {
+  min-height: 132px;
+}
+
+.layout.touch .environment-card,
+.layout.touch .system-card {
+  grid-column: span 1;
+}
+
+.layout.touch .env-metric,
+.layout.touch .system-list > div {
+  min-height: 48px;
+}
+
+@media (orientation: portrait) and (min-width: 700px) and (max-width: 1180px) {
+  .layout.touch .home-grid,
+  .layout.touch .room-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout.touch .theme-toggle button:not(.on) {
+    width: 48px;
+    padding: 0;
+    overflow: hidden;
+    color: transparent;
+  }
+
+  .layout.touch .theme-toggle button:not(.on) svg {
+    color: var(--indigo);
+  }
+
+  .layout.touch .home-hero {
+    grid-template-columns: 1fr;
+  }
+
+  .layout.touch .home-hero-insights {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .layout.touch .home-grid,
+  .layout.touch .room-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .layout.touch .hud-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout.touch .home-grid .alerts-card,
+  .layout.touch .home-grid .home-status-card,
+  .layout.touch .home-grid .home-system-card,
+  .layout.touch .home-grid .timeline-card,
+  .layout.touch .environment-card,
+  .layout.touch .system-card {
+    grid-column: 1;
+  }
+
+  .layout.touch .weather-card,
+  .layout.touch .home-grid .home-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* iPad 10.2 landscape: griglia stabile, non masonry/colonna. */
+@media (orientation: landscape) and (min-width: 900px) and (max-width: 1180px) {
+  .layout.touch {
+    padding: 10px 12px 12px;
+    gap: 8px;
+  }
+
+  .layout.touch .sidebar {
+    min-height: 58px;
+    padding: 7px;
+    border-radius: 20px;
+  }
+
+  .layout.touch .side-logo {
+    width: 46px;
+    height: 46px;
+    flex-basis: 46px;
+    border-radius: 16px;
+  }
+
+  .layout.touch .side-rooms button {
+    min-width: 92px;
+    min-height: 46px;
+    padding: 8px 10px;
+    border-radius: 16px;
+    gap: 7px;
+  }
+
+  .layout.touch .sr-name {
+    font-size: 0.78rem;
+  }
+
+  .layout.touch .side-sys button,
+  .layout.touch .bell,
+  .layout.touch .theme-toggle button {
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .layout.touch .topbar {
+    min-height: 50px;
+    gap: 10px;
+  }
+
+  .layout.touch .avatar {
+    width: 44px;
+    height: 44px;
+  }
+
+  .layout.touch .welcome-hi {
+    font-size: 1.1rem;
+  }
+
+  .layout.touch .welcome-sub {
+    font-size: 0.78rem;
+  }
+
+  .layout.touch .theme-toggle button {
+    padding: 0 12px;
+    font-size: 0.82rem;
+  }
+
+  .layout.touch .home-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 42px minmax(142px, auto) minmax(142px, auto) minmax(126px, auto);
+    grid-auto-rows: minmax(126px, auto);
+    gap: 10px;
+  }
+
+  .layout.touch .hud-strip {
+    grid-column: 1 / -1;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .layout.touch .hud-badge {
+    min-height: 42px;
+    padding: 6px 8px;
+    border-radius: 14px;
+    grid-template-columns: 18px 1fr;
+    column-gap: 6px;
+  }
+
+  .layout.touch .hud-badge span {
+    font-size: 0.54rem;
+    line-height: 1;
+  }
+
+  .layout.touch .hud-badge strong {
+    font-size: 0.72rem;
+    line-height: 1.05;
+  }
+
+  .layout.touch .home-grid .home-hero {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    min-height: 142px;
+    grid-template-columns: minmax(160px, 0.9fr) minmax(190px, 1.1fr);
+    padding: 18px 20px;
+  }
+
+  .layout.touch .home-hero h2 {
+    font-size: 1.95rem;
+  }
+
+  .layout.touch .home-hero-summary {
+    font-size: 0.82rem;
+  }
+
+  .layout.touch .presence-badges span {
+    max-width: 92px;
+    padding: 5px 8px;
+    font-size: 0.66rem;
+  }
+
+  .layout.touch .presence-badges.empty {
+    display: none;
+  }
+
+  .layout.touch .home-hero-insights {
+    grid-template-columns: 1fr;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .layout.touch .hero-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .layout.touch .hero-insight {
+    min-height: 42px;
+    grid-template-columns: auto 1fr;
+    padding: 7px 8px;
+    border-radius: 14px;
+  }
+
+  .layout.touch .hero-insight span {
+    display: none;
+  }
+
+  .layout.touch .hero-insight strong {
+    justify-self: end;
+    font-size: 0.84rem;
+  }
+
+  .layout.touch .home-grid .weather-card {
+    grid-column: 3 / 5;
+    grid-row: 2;
+    min-height: 142px;
+    grid-template-columns: minmax(180px, 0.72fr) 1fr;
+    gap: 10px;
+  }
+
+  .layout.touch .weather-main {
+    gap: 10px;
+  }
+
+  .layout.touch .weather-icon {
+    width: 50px;
+    height: 50px;
+  }
+
+  .layout.touch .weather-main strong {
+    font-size: 1.9rem;
+  }
+
+  .layout.touch .weather-forecast {
+    min-height: 58px;
+  }
+
+  .layout.touch .home-grid .home-status-card {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .home-system-card {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .alerts-card {
+    grid-column: 3;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .timeline-card {
+    grid-column: 4;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .alerts-card,
+  .layout.touch .home-grid .home-status-card,
+  .layout.touch .home-grid .home-system-card,
+  .layout.touch .home-grid .timeline-card {
+    min-height: 142px;
+    padding: 14px;
+  }
+
+  .layout.touch .home-grid .energy-ops-card {
+    grid-column: 1 / 3;
+    grid-row: 4;
+    min-height: 126px;
+  }
+
+  .layout.touch .home-grid .home-rooms-card {
+    grid-column: 3 / 5;
+    grid-row: 4;
+    min-height: 126px;
+  }
+
+  .layout.touch .home-stat-list,
+  .layout.touch .system-list,
+  .layout.touch .alert-list,
+  .layout.touch .timeline-list,
+  .layout.touch .energy-bars {
+    gap: 6px;
+  }
+
+  .layout.touch .home-stat-list > div,
+  .layout.touch .system-list > div {
+    min-height: 30px;
+    padding: 6px 8px;
+  }
+
+  .layout.touch .energy-row {
+    grid-template-columns: 104px 1fr 70px;
+    gap: 8px;
+  }
+
+  .layout.touch .home-room-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+  }
+
+  .layout.touch .home-room-list button {
+    min-height: 58px;
+    padding: 9px 10px;
+  }
+
+  .layout.touch .home-room-list strong,
+  .layout.touch .home-room-list b {
+    font-size: 0.92rem;
+  }
+
+  .layout.touch .home-room-list em,
+  .layout.touch .home-room-list i {
+    font-size: 0.64rem;
+  }
+
+  .layout.touch .room-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-auto-rows: minmax(92px, auto);
+    gap: 10px;
+  }
+
+  .layout.touch .mini-clock,
+  .layout.touch .mini-stat {
+    min-height: 86px;
+  }
+
+  .layout.touch .span-thermo {
+    grid-column: span 2;
+    grid-row: span 4;
+    min-height: 430px;
+  }
+
+  .layout.touch .lights-card {
+    grid-column: span 2;
+    min-height: 136px;
+  }
+
+  .layout.touch .environment-card,
+  .layout.touch .system-card {
+    grid-column: span 1;
+    min-height: 180px;
+  }
+}
+
+/* iPad portrait: ordinato a due colonne, senza incastri casuali. */
+@media (orientation: portrait) and (min-width: 700px) and (max-width: 1180px) {
+  .layout.touch .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(136px, auto);
+    gap: 12px;
+  }
+
+  .layout.touch .hud-strip,
+  .layout.touch .home-grid .home-hero,
+  .layout.touch .home-grid .weather-card,
+  .layout.touch .home-grid .energy-ops-card,
+  .layout.touch .home-grid .home-rooms-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .layout.touch .home-grid .home-status-card,
+  .layout.touch .home-grid .home-system-card,
+  .layout.touch .home-grid .alerts-card,
+  .layout.touch .home-grid .timeline-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+
+  .layout.touch .home-grid .weather-card {
+    grid-template-columns: minmax(220px, 0.78fr) 1fr;
+  }
+
+  .layout.touch .room-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .layout.touch .span-thermo,
+  .layout.touch .lights-card {
+    grid-column: 1 / -1;
+  }
+}
+
+/* Correzione iPad: navigazione laterale compatta, non barra superiore enorme. */
+@media (min-width: 700px) and (max-width: 1180px) {
+  .layout.touch {
+    flex-direction: row;
+    align-items: stretch;
+    padding: 12px;
+    gap: 12px;
+  }
+
+  .layout.touch .sidebar {
+    flex: 0 0 92px;
+    width: 92px;
+    max-height: calc(100dvh - 24px);
+    min-height: 0;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 8px;
+    border-radius: 26px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .layout.touch .side-logo {
+    width: 54px;
+    height: 54px;
+    flex: 0 0 54px;
+    border-radius: 18px;
+  }
+
+  .layout.touch .side-rooms {
+    width: 100%;
+    flex: 1 1 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+
+  .layout.touch .side-rooms button {
+    width: 72px;
+    min-width: 0;
+    min-height: 58px;
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: center;
+    gap: 4px;
+    padding: 7px 6px;
+    border-radius: 18px;
+    text-align: center;
+  }
+
+  .layout.touch .side-rooms button svg {
+    flex: 0 0 auto;
+  }
+
+  .layout.touch .sr-name {
+    width: 100%;
+    font-size: 0.62rem;
+    line-height: 1.05;
+    white-space: normal;
+    text-align: center;
+  }
+
+  .layout.touch .side-sys {
+    width: 100%;
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 0 0;
+    border-left: none;
+    border-top: 1px solid var(--glass-hairline);
+  }
+
+  .layout.touch .side-sys button {
+    width: 52px;
+    min-width: 52px;
+    height: 52px;
+    min-height: 52px;
+    border-radius: 17px;
+  }
+
+  .layout.touch .main {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .layout.touch .topbar {
+    min-height: 54px;
+  }
+}
+
+@media (orientation: landscape) and (min-width: 900px) and (max-width: 1180px) {
+  .layout.touch .home-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-rows: 42px 154px 196px minmax(124px, auto);
+    grid-auto-rows: minmax(112px, auto);
+    gap: 10px;
+    align-items: stretch;
+  }
+
+  .layout.touch .home-grid .home-hero {
+    grid-column: 1 / 3;
+    grid-row: 2;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .layout.touch .home-hero-main {
+    min-width: 0;
+    overflow: hidden;
+  }
+
+  .layout.touch .presence-badges {
+    max-width: 100%;
+    gap: 4px;
+    margin-top: 0;
+    overflow: hidden;
+  }
+
+  .layout.touch .presence-badges span {
+    max-width: 76px;
+    padding: 4px 7px;
+    font-size: 0.62rem;
+  }
+
+  .layout.touch .home-grid .weather-card {
+    grid-column: 3 / 5;
+    grid-row: 2;
+    min-height: 0;
+    height: 100%;
+  }
+
+  .layout.touch .weather-forecast .wf-point:nth-child(n+7) {
+    display: none;
+  }
+
+  .layout.touch .home-grid .home-status-card {
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .home-system-card {
+    grid-column: 2;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .alerts-card {
+    grid-column: 3;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .timeline-card {
+    grid-column: 4;
+    grid-row: 3;
+  }
+
+  .layout.touch .home-grid .home-status-card,
+  .layout.touch .home-grid .home-system-card,
+  .layout.touch .home-grid .alerts-card,
+  .layout.touch .home-grid .timeline-card {
+    align-self: stretch;
+    min-height: 0 !important;
+    height: 100% !important;
+    padding: 12px 14px;
+  }
+
+  .layout.touch .home-status-card h3,
+  .layout.touch .home-system-card h3,
+  .layout.touch .home-rooms-head h3 {
+    font-size: 0.98rem;
+  }
+
+  .layout.touch .home-stat-list,
+  .layout.touch .system-list,
+  .layout.touch .alert-list,
+  .layout.touch .timeline-list {
+    gap: 5px;
+  }
+
+  .layout.touch .home-stat-list > div,
+  .layout.touch .system-list > div {
+    min-height: 27px;
+    padding: 5px 8px;
+  }
+
+  .layout.touch .alert-list > div {
+    min-height: 34px;
+    padding: 6px 8px;
+  }
+
+  .layout.touch .timeline-list > div {
+    min-height: 24px;
+  }
+
+  .layout.touch .timeline-list > div:nth-child(n+4) {
+    display: none;
+  }
+
+  .layout.touch .all-clear {
+    min-height: 58px;
+    gap: 3px;
+  }
+
+  .layout.touch .all-clear svg {
+    width: 1.1rem;
+    height: 1.1rem;
+  }
+
+  .layout.touch .all-clear strong {
+    font-size: 0.9rem;
+  }
+
+  .layout.touch .all-clear span {
+    font-size: 0.68rem;
+  }
+
+  .layout.touch .home-grid .energy-ops-card {
+    grid-column: 1 / 3;
+    grid-row: 4;
+  }
+
+  .layout.touch .home-grid .home-rooms-card {
+    grid-column: 3 / 5;
+    grid-row: 4;
+  }
+}
+
+@media (orientation: portrait) and (min-width: 700px) and (max-width: 899px) {
+  .layout.touch .home-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 11px;
+  }
+
+  .layout.touch .hud-strip,
+  .layout.touch .home-grid .home-hero,
+  .layout.touch .home-grid .weather-card,
+  .layout.touch .home-grid .energy-ops-card,
+  .layout.touch .home-grid .home-rooms-card {
+    grid-column: 1 / -1;
+    grid-row: auto;
+  }
+
+  .layout.touch .home-grid .home-status-card,
+  .layout.touch .home-grid .home-system-card,
+  .layout.touch .home-grid .alerts-card,
+  .layout.touch .home-grid .timeline-card {
+    grid-column: auto;
+    grid-row: auto;
+  }
+}
+
+/* Override finale anti-overlap: KPI e persone restano sempre separati su tablet. */
+@media (min-width: 700px) and (max-width: 1180px) {
+  .layout.touch .home-hero-insights {
+    display: grid;
+    grid-template-columns: 1fr !important;
+    align-content: center;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .layout.touch .hero-facts {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    gap: 7px;
+    min-width: 0;
+  }
+
+  .layout.touch .presence-badges {
+    max-width: 100%;
+    margin-top: 0;
+    overflow: hidden;
+  }
+
+  .layout.touch .presence-badges span {
+    max-width: 76px;
+  }
+}

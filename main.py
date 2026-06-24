@@ -34,11 +34,16 @@ from api import routes
 from core.ac_controller import ACController
 from core.config import load_config
 from core.light_controller import LightController
+from core.mpc_advisor import MpcAdvisor
+from core.mpc_logger import MpcLogger
 from core.presence import PresenceManager
+from core.remote_sensor_reader import RemoteSensorReader
 from core.rule_engine import RuleEngine
 from core.scheduler import ForceOffScheduler
 from core.season import SeasonManager
 from core.sensor_poller import SensorPoller
+from core.switchbot_reader import SwitchBotReader
+from core.weather import WeatherProvider
 from db.database import Database
 
 PROJECT_ROOT = Path(__file__).resolve().parent
@@ -160,7 +165,7 @@ async def run() -> None:
     # --- Rilevamento presenza (FRITZ!Box) ---
     ac_device_ids = [r.panasonic_device_id for r in cfg.rooms
                      if r.panasonic_device_id]
-    presence_manager = PresenceManager(cfg.presence, ac, ac_device_ids)
+    presence_manager = PresenceManager(cfg.presence, ac, ac_device_ids, database=db)
 
     # --- Luci IKEA (stesso hub Dirigera) ---
     light_controller = LightController(hub, ceiling_rooms=cfg.lights.ceiling_rooms)
@@ -171,11 +176,35 @@ async def run() -> None:
     poller = SensorPoller(hub, cfg, db, engine)
     scheduler = ForceOffScheduler(cfg, ac, engine, db)
 
+    # --- Meteo esterno (Open-Meteo): T esterna 0.1°C + previsione per l'MPC ---
+    #     Coordinate dal config (location:); default generici se assenti.
+    weather = WeatherProvider(cfg.latitude, cfg.longitude)
+
+    # --- Datalogger MPC: raccoglie il dataset per il futuro modello predittivo
+    #     (solo scrittura, non influenza l'automazione). ---
+    mpc_logger = MpcLogger(cfg, ac, db, presence_manager=presence_manager,
+                           weather_provider=weather)
+
+    # --- Reader SwitchBot (BLE): dà a una stanza senza sensore IKEA (Camera da
+    #     letto) T/umidita' indoor reali, scritte in sensor_readings come un
+    #     sensore qualsiasi. Solo scrittura, lettura BLE passiva. ---
+    switchbot_reader = SwitchBotReader(cfg, db, rule_engine=engine)
+
+    # --- Reader sensori remoti HTTP: nodi Pi Zero/BME280 in LAN. Se una stanza
+    #     lo configura, la lettura remota sostituisce l'IKEA locale come sorgente
+    #     ad alta precisione per storico, rule engine e MPC. ---
+    remote_sensor_reader = RemoteSensorReader(cfg, db, rule_engine=engine)
+
+    # --- MPC advisory: controllo predittivo in sola lettura (consiglia, non
+    #     comanda). Gira il modello validato in avanti + meteo, logga i consigli. ---
+    mpc_advisor = MpcAdvisor(cfg, db, weather, presence_manager=presence_manager)
+
     # --- Contesto API ---
     routes.init_context(
         config=cfg, database=db, ac_controller=ac, rule_engine=engine,
         scheduler=scheduler, season_manager=season_manager,
         presence_manager=presence_manager, light_controller=light_controller,
+        weather_provider=weather,
         dirigera_connected=True, panasonic_connected=panasonic_ok,
     )
 
@@ -188,6 +217,10 @@ async def run() -> None:
         await engine.bootstrap_state()
     await poller.start()
     scheduler.start()
+    await mpc_logger.start()
+    await switchbot_reader.start()
+    await remote_sensor_reader.start()
+    await mpc_advisor.start()
 
     # --- Warm-up cache AC: pre-carica stato + energia in background, cosi' la
     #     prima apertura della dashboard e' gia' istantanea (niente attesa cloud).
@@ -251,11 +284,16 @@ async def run() -> None:
                 logger.warning("Teardown '%s' non pulito: %s", name, exc)
 
         warm_task.cancel()
+        await _safe(mpc_advisor.stop(), "mpc_advisor")
+        await _safe(remote_sensor_reader.stop(), "remote_sensor_reader")
+        await _safe(switchbot_reader.stop(), "switchbot_reader")
+        await _safe(mpc_logger.stop(), "mpc_logger")
         await _safe(poller.stop(), "sensor_poller")
         await _safe(season_manager.stop(), "season_manager")
         await _safe(presence_manager.stop(), "presence_manager")
         scheduler.shutdown()
         await _safe(ac.close(), "ac_controller")
+        await _safe(weather.close(), "weather")
         await _safe(db.close(), "database")
         logger.info("=== Climate Automation: arresto completato ===")
 

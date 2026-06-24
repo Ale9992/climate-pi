@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Query
@@ -26,6 +27,8 @@ from api.models import (
     RoomState,
     RulesUpdate,
     ScheduleUpdate,
+    WeatherPoint,
+    WeatherState,
 )
 from core import config as config_module
 from core.config import Action
@@ -45,6 +48,7 @@ class AppContext:
     season_manager: object = None
     presence_manager: object = None
     light_controller: object = None
+    weather_provider: object = None
     # Flag di stato connessioni, aggiornati dai componenti.
     dirigera_connected: bool = True
     panasonic_connected: bool = True
@@ -91,9 +95,15 @@ async def _room_state(room, ac, db, engine) -> RoomState:
 
     return RoomState(
         name=room.name,
-        has_sensor=bool(room.ikea_sensor_id),
+        has_sensor=bool(
+            room.ikea_sensor_id
+            or getattr(room, "remote_sensor_url", None)
+            or getattr(room, "switchbot_mac", None)
+        ),
         temperature=latest["temperature"] if latest else None,
         humidity=latest["humidity"] if latest else None,
+        pressure=latest["pressure"] if latest else None,
+        lux=latest["lux"] if latest else None,
         last_reading=latest["timestamp"] if latest else None,
         ac=ac_state,
         override_active=engine.is_overridden(room.name) if engine else False,
@@ -335,11 +345,13 @@ async def get_status() -> ConnectionStatus:
             pass
     presence = None
     presence_home = None
+    presence_people = []
     pm = ctx.presence_manager
     if pm is not None and getattr(pm, "_cfg", None) is not None and pm._cfg.enabled:
         try:
             presence = pm.state.value
             presence_home = pm.is_home()
+            presence_people = pm.people_home()
         except Exception:  # noqa: BLE001
             pass
     return ConnectionStatus(
@@ -349,4 +361,33 @@ async def get_status() -> ConnectionStatus:
         outdoor_avg_temperature=outdoor,
         presence=presence,
         presence_home=presence_home,
+        presence_people=presence_people,
+    )
+
+
+@router.get("/weather", response_model=WeatherState)
+async def get_weather() -> WeatherState:
+    """Meteo esterno corrente e previsione breve da Open-Meteo."""
+    weather = ctx.weather_provider
+    if weather is None:
+        return WeatherState()
+    try:
+        payload = await weather._fetch()  # cache interna del provider, niente doppie chiamate
+    except Exception:  # noqa: BLE001 - degrada senza rompere la dashboard
+        logger.exception("Meteo non disponibile")
+        return WeatherState()
+    if not payload:
+        return WeatherState()
+    now_hour = datetime.now().strftime("%Y-%m-%dT%H:00")
+    forecast = [
+        WeatherPoint(time=t, temperature=round(v, 1) if v is not None else None)
+        for t, v in (payload.get("hourly") or [])
+        if t >= now_hour
+    ][:12]
+    temp = payload.get("current")
+    hum = payload.get("humidity")
+    return WeatherState(
+        temperature=round(temp, 1) if temp is not None else None,
+        humidity=round(hum, 0) if hum is not None else None,
+        forecast=forecast,
     )

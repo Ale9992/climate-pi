@@ -36,6 +36,8 @@ class RoomState(BaseModel):
     has_sensor: bool
     temperature: Optional[float] = None
     humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    lux: Optional[float] = None
     last_reading: Optional[str] = None      # timestamp ISO ultima lettura sensore
     ac: Optional[ACState] = None
     override_active: bool = False
@@ -46,6 +48,8 @@ class ReadingPoint(BaseModel):
     """Punto dello storico letture."""
     temperature: Optional[float] = None
     humidity: Optional[float] = None
+    pressure: Optional[float] = None
+    lux: Optional[float] = None
     timestamp: str
 
 
@@ -68,6 +72,20 @@ class ConnectionStatus(BaseModel):
     outdoor_avg_temperature: Optional[float] = None
     presence: Optional[str] = None            # casa_abitata / casa_vuota / sconosciuto / None(disattivo)
     presence_home: Optional[bool] = None      # True=in casa, False=fuori, None=non disponibile
+    presence_people: list[str] = Field(default_factory=list)  # nomi dei device/persone presenti
+
+
+class WeatherPoint(BaseModel):
+    """Punto orario della previsione meteo."""
+    time: str
+    temperature: Optional[float] = None
+
+
+class WeatherState(BaseModel):
+    """Meteo esterno corrente + previsione breve."""
+    temperature: Optional[float] = None
+    humidity: Optional[float] = None
+    forecast: list[WeatherPoint] = Field(default_factory=list)
 
 
 # ---------------------------------------------------------------------------

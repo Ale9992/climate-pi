@@ -14,6 +14,16 @@ config/.dirigera_token
 config/config.yaml
 config/*.bak_*
 
+# Parametri/modelli calibrati sulla CASA specifica (non generici): un nuovo
+# utente parte dai default fisici e il calibratore li ri-genera.
+config/thermal_params*.json
+config/ac_models.json
+
+# Strumenti di diagnosi/calibrazione e test (specifici di casa, fuori dal repo
+# pubblico): contengono script personali (es. MacBook kiosk) e fixture interne.
+tools/
+tests/
+
 # Dashboard
 dashboard/node_modules/
 dashboard/dist/

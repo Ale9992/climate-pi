@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+import time
 from typing import Any, Optional
 
 import aiohttp
@@ -41,6 +42,13 @@ logger = logging.getLogger("climate.ac")
 # Numero massimo di tentativi e ritardi (backoff esponenziale) sui comandi.
 _MAX_RETRIES = 3
 _BACKOFF_SECONDS = (1, 2, 4)
+# Circuit breaker per il cloud Panasonic: dopo _CB_FAIL_THRESHOLD chiamate
+# consecutive fallite (es. cloud in manutenzione/outage), il breaker si APRE e per
+# _CB_COOLDOWN_SECONDS le chiamate falliscono subito senza ritentare ne' loggare a
+# raffica (evita migliaia di warning e di martellare il cloud). Alla scadenza fa un
+# solo probe (half-open); un successo lo richiude.
+_CB_FAIL_THRESHOLD = 5
+_CB_COOLDOWN_SECONDS = 120.0
 
 
 class ACUnreachableError(Exception):
@@ -103,6 +111,10 @@ class ACController:
         self._energy_cache: dict[str, tuple[float, Optional[dict]]] = {}
         self._STATE_TTL = 25.0     # secondi: stato AC (allineato al polling 30s)
         self._ENERGY_TTL = 300.0   # secondi: consumo kWh (cambia lentamente)
+        # Circuit breaker cloud Panasonic (vedi _with_retry).
+        self._cb_open = False
+        self._cb_fail = 0
+        self._cb_open_until = 0.0
 
     # -- ciclo di vita ------------------------------------------------------
     async def connect(self) -> None:
@@ -140,20 +152,46 @@ class ACController:
         `factory` e' una funzione zero-arg che ritorna una nuova coroutine
         ad ogni tentativo (le coroutine non sono riutilizzabili).
         """
+        now = time.monotonic()
+        half_open = False
+        if self._cb_open:
+            if now < self._cb_open_until:
+                # Breaker aperto: fail-fast, niente retry ne' warning a raffica.
+                raise ACUnreachableError(
+                    f"{what}: cloud Panasonic non raggiungibile (circuit breaker aperto)")
+            half_open = True  # cooldown scaduto: un solo tentativo di prova
+
+        attempts = 1 if half_open else _MAX_RETRIES
         last_exc: Optional[Exception] = None
-        for attempt in range(_MAX_RETRIES):
+        for attempt in range(attempts):
             try:
-                return await factory()
+                result = await factory()
+                if self._cb_open or self._cb_fail:
+                    logger.info("Cloud Panasonic recuperato (circuit breaker chiuso).")
+                self._cb_open = False
+                self._cb_fail = 0
+                return result
             except Exception as exc:  # noqa: BLE001 - rete: vogliamo ritentare
                 last_exc = exc
-                delay = _BACKOFF_SECONDS[min(attempt, len(_BACKOFF_SECONDS) - 1)]
-                logger.warning(
-                    "Errore '%s' (tentativo %d/%d): %s — ritento tra %ds",
-                    what, attempt + 1, _MAX_RETRIES, exc, delay,
-                )
-                if attempt < _MAX_RETRIES - 1:
-                    await asyncio.sleep(delay)
-        raise ACUnreachableError(f"{what}: falliti {_MAX_RETRIES} tentativi") from last_exc
+                if not half_open:
+                    delay = _BACKOFF_SECONDS[min(attempt, len(_BACKOFF_SECONDS) - 1)]
+                    logger.warning(
+                        "Errore '%s' (tentativo %d/%d): %s — ritento tra %ds",
+                        what, attempt + 1, attempts, exc, delay,
+                    )
+                    if attempt < attempts - 1:
+                        await asyncio.sleep(delay)
+
+        # Tutti i tentativi falliti: conta verso il breaker.
+        self._cb_fail += 1
+        if self._cb_fail >= _CB_FAIL_THRESHOLD and not self._cb_open:
+            self._cb_open = True
+            logger.warning(
+                "Cloud Panasonic non risponde da %d chiamate: circuit breaker APERTO "
+                "per %ds (smetto di ritentare).", self._cb_fail, int(_CB_COOLDOWN_SECONDS))
+        if self._cb_open:
+            self._cb_open_until = time.monotonic() + _CB_COOLDOWN_SECONDS
+        raise ACUnreachableError(f"{what}: cloud Panasonic non raggiungibile") from last_exc
 
     # -- lettura stato ------------------------------------------------------
     async def _fetch_device(self, device_id: str):
@@ -202,6 +240,36 @@ class ACController:
         return state
 
     # -- scrittura stato ----------------------------------------------------
+    def _state_differs(self, device, power, mode, temperature, fan_speed,
+                       nanoe, swing_vertical, eco_mode) -> bool:
+        """True se lo stato desiderato differisce da quello ATTUALE del device.
+        Confronta solo i campi specificati (non-None); il power e' confrontato
+        sempre. Se vogliamo spegnere e il device e' gia' Off, nient'altro conta."""
+        p = device.parameters
+        if _enum_name(p.power) != _enum_name(_to_power(power)):
+            return True
+        if _enum_name(_to_power(power)) != "On":
+            return False
+        if mode is not None and _enum_name(p.mode) != _enum_name(_to_mode(mode)):
+            return True
+        if temperature is not None and p.target_temperature != int(round(temperature)):
+            return True
+        if fan_speed is not None:
+            want = _to_fan(fan_speed)
+            if want is not None and _enum_name(p.fan_speed) != _enum_name(want):
+                return True
+        if eco_mode is not None and _enum_name(getattr(p, "eco_mode", None)) != eco_mode:
+            return True
+        if nanoe is not None:
+            cur = _enum_name(getattr(p, "nanoe_mode", None))
+            cur_bool = (cur in ("On", "All", "ModeG")) if cur not in (None, "Unavailable") else None
+            if cur_bool != nanoe:
+                return True
+        if swing_vertical is not None and \
+                _enum_name(getattr(p, "vertical_swing_mode", None)) != swing_vertical:
+            return True
+        return False
+
     async def set_device_state(
         self,
         device_id: str,
@@ -225,6 +293,17 @@ class ACController:
         }
         try:
             device = await self._fetch_device(device_id)
+
+            # Dedup REALE: ChangeRequestBuilder.has_changes fa solo len(_request)!=0
+            # e NON confronta con lo stato corrente -> ogni set partirebbe sempre.
+            # Confrontiamo qui col device live (get_device e' fresco): se lo stato
+            # desiderato combacia gia', non inviamo nulla. Evita comandi cloud
+            # ridondanti (meno carico/429) e righe inutili in ac_commands.
+            if not self._state_differs(device, power, mode, temperature,
+                                       fan_speed, nanoe, swing_vertical, eco_mode):
+                logger.debug("AC %s gia' nello stato desiderato: nessun comando",
+                             self.device_name(device_id))
+                return False
 
             builder = ChangeRequestBuilder(device)
             builder.set_power_mode(_to_power(power))
@@ -252,12 +331,6 @@ class ACController:
                     builder.set_eco_mode(EcoMode[eco_mode])
                 except KeyError:
                     logger.warning("Eco mode sconosciuto: %r", eco_mode)
-
-            # Se nulla e' cambiato rispetto allo stato attuale, evita la chiamata.
-            if hasattr(builder, "has_changes") and not builder.has_changes:
-                logger.info("AC %s gia' nello stato desiderato: nessun comando",
-                            self.device_name(device_id))
-                return False
 
             payload = builder.build()
             assert self._client is not None

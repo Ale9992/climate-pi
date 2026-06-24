@@ -138,7 +138,7 @@ export default function Thermostat({ room, onAction }) {
   return (
     <div className="thermo" style={{ '--accent': accent }}>
       {/* Letture ambiente: due "pillole" in vetro + nanoe.
-          La temperatura "interna" viene dal sensore IKEA (affidabile, in stanza).
+          La temperatura "interna" viene dal sensore ambiente configurato.
           Se manca, fallback alla sonda dello split AC — ma ETICHETTATA come tale:
           quella sonda sta sull'evaporatore e durante il funzionamento legge l'aria
           fredda/calda dello scambiatore, non la stanza. */}
@@ -149,7 +149,7 @@ export default function Thermostat({ room, onAction }) {
             : (ac.inside_temperature != null ? ac.inside_temperature : null)
           return (
             <div className={`env-chip ${hasIkea ? '' : 'env-probe'}`}
-                 title={hasIkea ? 'Sensore ambiente IKEA' : 'Sonda interna del condizionatore (indicativa)'}>
+                 title={hasIkea ? 'Sensore ambiente stanza' : 'Sonda interna del condizionatore (indicativa)'}>
               <Ic.inside width="20" height="20" />
               <span className="env-val">{t != null ? Math.round(t) : '—'}°</span>
               <span className="env-lbl">{hasIkea ? 'interna' : 'sonda AC'}</span>

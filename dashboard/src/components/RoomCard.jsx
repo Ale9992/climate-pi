@@ -70,6 +70,20 @@ export default function RoomCard({ room, onAction }) {
           {room.humidity != null && <span className="unit">%</span>}
           <span className="lbl">Umidità</span>
         </div>
+        <div className="reading tertiary">
+          <span className={`val ${room.lux == null ? 'empty' : ''}`}>
+            {room.lux != null ? Math.round(room.lux) : '—'}
+          </span>
+          {room.lux != null && <span className="unit">lx</span>}
+          <span className="lbl">Luce</span>
+        </div>
+        <div className="reading tertiary">
+          <span className={`val ${room.pressure == null ? 'empty' : ''}`}>
+            {room.pressure != null ? room.pressure.toFixed(0) : '—'}
+          </span>
+          {room.pressure != null && <span className="unit">hPa</span>}
+          <span className="lbl">Pressione</span>
+        </div>
       </div>
 
       {!room.has_sensor && (

@@ -47,6 +47,10 @@ class _RoomRuntime:
     expected_power: Optional[bool] = None
     expected_mode: Optional[str] = None
     expected_temp: Optional[float] = None
+    # Presenza della persona di riferimento al ciclo precedente (per rilevare la
+    # transizione fuori->casa) e data dell'ultimo boost Powerful di prima comparsa.
+    person_was_home: Optional[bool] = None
+    last_boost_date: Optional[str] = None
 
 
 def comfort_decision(
@@ -207,6 +211,7 @@ class RuleEngine:
             return
 
         rt = self._runtime.setdefault(room_name, _RoomRuntime())
+        boost_now = False  # prima comparsa della persona nel giorno + stanza calda
 
         # 0) Fascia notturna: dalle force_off_time alle night_off_end gli AC
         #    DEVONO restare spenti (regola dura, vince su tutto). Se acceso, spegne.
@@ -259,14 +264,39 @@ class RuleEngine:
                     else:
                         logger.debug("'%s': persona fuori, salto (no accensioni).",
                                      room_name)
+                    rt.person_was_home = False
                     return
+                # La persona di riferimento E' in casa.
+                first_arrival = (rt.person_was_home is False)  # transizione fuori->casa
+                rt.person_was_home = True
+                if room.powerful_on_first_arrival and first_arrival and temperature is not None:
+                    import datetime as _dt
+                    today = _dt.date.today().isoformat()
+                    on_thr = 23.0
+                    if room.comfort and room.comfort.summer:
+                        b = room.comfort.summer
+                        on_thr = b.target_temp + b.deadband
+                    if rt.last_boost_date != today and temperature >= on_thr:
+                        boost_now = True
+                        rt.last_boost_date = today
+                        logger.info("'%s': prima comparsa di oggi e stanza calda (%.1f° >= "
+                                    "%.1f°) -> avvio Powerful.", room_name, temperature, on_thr)
             elif not self._presence.is_home():
                 logger.debug("'%s': casa vuota, salto valutazione (no accensioni).",
                              room_name)
                 return
 
-        # 2) Determina l'azione: modello comfort-band (preferito) o regole legacy.
-        if room.comfort is not None:
+        # 2) Determina l'azione: Powerful di prima comparsa (priorita'), poi
+        #    modello comfort-band (preferito) o regole legacy.
+        if boost_now:
+            sp = 20.0
+            if room.comfort and room.comfort.summer \
+                    and room.comfort.summer.boost_setpoint is not None:
+                sp = room.comfort.summer.boost_setpoint
+            action = Action(power=True, mode="Cool", temperature=sp,
+                            fan_speed="High", eco_mode="Powerful")
+            label = "prima-comparsa-Powerful"
+        elif room.comfort is not None:
             action, label = await self._comfort_action(room, temperature, humidity, rt)
         else:
             match = self.evaluate(room, temperature, humidity)
@@ -300,14 +330,16 @@ class RuleEngine:
         # 4) Applica l'azione (spegnimento o impostazione stato).
         if action.power:
             action_desc = (f"ON mode={action.mode} temp={action.temperature} "
-                           f"fan={action.fan_speed}")
+                           f"fan={action.fan_speed}"
+                           + (f" eco={action.eco_mode}" if action.eco_mode else ""))
         else:
             action_desc = "OFF (comfort raggiunto)"
         try:
             if action.power:
                 sent = await self._ac.set_device_state(
                     room.panasonic_device_id, power=True, mode=action.mode,
-                    temperature=action.temperature, fan_speed=action.fan_speed)
+                    temperature=action.temperature, fan_speed=action.fan_speed,
+                    eco_mode=action.eco_mode)
                 rt.is_on = True
             else:
                 sent = await self._ac.turn_off(room.panasonic_device_id)

@@ -47,8 +47,19 @@ class ForceOffScheduler:
             replace_existing=True,
             misfire_grace_time=300,  # tolleranza se il sistema era occupato
         )
+        # Pulizia giornaliera del DB (retention) alle 04:00: limita crescita DB
+        # e usura SD. Gira nella fascia notturna, cloud/AC tranquilli.
+        self._scheduler.add_job(
+            self._prune_db,
+            trigger=CronTrigger(hour=4, minute=0),
+            id="db_prune_daily",
+            name="Pulizia retention DB",
+            replace_existing=True,
+            misfire_grace_time=3600,
+        )
         self._scheduler.start()
-        logger.info("Scheduler avviato: spegnimento forzato alle %02d:%02d", hour, minute)
+        logger.info("Scheduler avviato: spegnimento forzato alle %02d:%02d "
+                    "+ pulizia DB 04:00", hour, minute)
 
     def shutdown(self) -> None:
         """Ferma lo scheduler (senza attendere i job in corso)."""
@@ -74,6 +85,19 @@ class ForceOffScheduler:
         except (ValueError, AttributeError):
             logger.warning("Orario spegnimento non valido (%r): uso 03:00", value)
             return 3, 0
+
+    async def _prune_db(self) -> None:
+        """Pulizia retention del DB (cancella storico vecchio ad alto volume)."""
+        try:
+            deleted = await self._db.prune_old()
+            tot = sum(deleted.values())
+            if tot:
+                logger.info("Pulizia DB: %d righe rimosse (%s)", tot,
+                            ", ".join(f"{k}={v}" for k, v in deleted.items() if v))
+            else:
+                logger.info("Pulizia DB: nessuna riga da rimuovere.")
+        except Exception as exc:  # noqa: BLE001 - non deve mai crashare il servizio
+            logger.error("Pulizia DB fallita: %s", exc)
 
     async def _force_off_all(self) -> None:
         """Spegne tutti gli AC configurati, bypassando regole e cooldown."""

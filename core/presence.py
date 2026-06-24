@@ -44,20 +44,28 @@ class PresenceManager:
     """Determina lo stato casa/vuota interrogando il FRITZ!Box."""
 
     def __init__(self, settings: PresenceSettings, ac_controller,
-                 ac_device_ids: list[str]) -> None:
+                 ac_device_ids: list[str], database=None) -> None:
         self._cfg = settings
         self._ac = ac_controller
+        self._db = database
         # Device AC da spegnere alla transizione -> vuoto.
         self._ac_device_ids = list(ac_device_ids)
+        # ip -> nome persona, e ultimo stato casa/fuori GIA' loggato (per
+        # registrare solo le TRANSIZIONI nel presence_log).
+        self._device_name: dict[str, str] = {
+            d.ip: d.name for d in settings.devices if d.ip
+        }
+        self._tracked_ips = set(self._device_name)
+        self._device_home_logged: dict[str, bool] = {}
         # Stato corrente (parte da HOME: fail-safe, non spegne all'avvio).
         self._state: Presence = Presence.HOME
         # Epoch dell'ultima volta in cui ALMENO un device era visto attivo.
         self._last_seen_epoch: float = time.time()
         # Presenza PER-DEVICE (per stanze legate a una persona specifica):
         # ip -> ultimo epoch in cui quel device e' stato visto attivo.
-        self._device_last_seen: dict[str, float] = {
-            d.ip: time.time() for d in settings.devices if d.ip
-        }
+        # Non inizializzare a "ora": al riavvio un telefono assente verrebbe
+        # considerato in casa per tutto il grace period.
+        self._device_last_seen: dict[str, float] = {}
         self._fc = None                       # FritzConnection (creata in start)
         self._loop: Optional[asyncio.AbstractEventLoop] = None
         self._stop = asyncio.Event()
@@ -85,10 +93,19 @@ class PresenceManager:
         Fail-safe: se l'IP non e' tracciato o non determinabile -> True (non
         toglie comfort per un dato mancante).
         """
-        if not ip or ip not in self._device_last_seen:
+        if not ip or ip not in self._tracked_ips:
             return True
+        if ip not in self._device_last_seen:
+            return False
         grace = self._cfg.away_grace_minutes * 60
         return (time.time() - self._device_last_seen[ip]) < grace
+
+    def people_home(self) -> list[str]:
+        """Nomi delle persone viste in casa secondo la stessa finestra grace."""
+        return [
+            name for ip, name in self._device_name.items()
+            if self.is_person_home(ip)
+        ]
 
     # -- connessione FRITZ!Box (bloccante, in executor) --------------------
     def _connect_blocking(self):
@@ -190,6 +207,21 @@ class PresenceManager:
             except asyncio.TimeoutError:
                 pass
 
+    async def _log_presence_transitions(self) -> None:
+        """Scrive nel presence_log SOLO i cambi di stato casa<->fuori per persona
+        (usa la stessa logica grace di is_person_home: niente flapping)."""
+        if self._db is None:
+            return
+        for ip, name in self._device_name.items():
+            home = self.is_person_home(ip)
+            if self._device_home_logged.get(ip) != home:
+                self._device_home_logged[ip] = home
+                try:
+                    await self._db.insert_presence_event(name, ip, home)
+                    logger.info("Presenza %s -> %s", name, "CASA" if home else "FUORI")
+                except Exception as exc:  # noqa: BLE001
+                    logger.warning("Log presenza '%s' fallito: %s", name, exc)
+
     async def _poll_once(self) -> None:
         """Una rilevazione: aggiorna lo stato e gestisce la transizione."""
         assert self._loop is not None
@@ -219,6 +251,9 @@ class PresenceManager:
         for ip, active in per_device.items():
             if active:
                 self._device_last_seen[ip] = now
+        # Registra le transizioni casa<->fuori di ogni persona (per lo storico
+        # presenza: capire orari/permanenza). Solo sui cambi di stato.
+        await self._log_presence_transitions()
         any_active = (True if any(per_device.values())
                       else (False if determinable else None))
 

@@ -63,6 +63,60 @@ Luci IKEA Dirigera ────────────────────�
 
 ---
 
+## 🧠 Controllo predittivo (MPC) — **beta, in sviluppo attivo**
+
+Sopra al rule engine reattivo, il progetto sta costruendo un cervello a **Model
+Predictive Control**. Non è un termostato che **reagisce** quando la stanza è già
+troppo calda: **guarda ore in avanti** e decide cosa fare *adesso* per mantenere
+il comfort spendendo meno energia possibile. Oggi gira in **modalità advisory**
+(prevede e consiglia, **non** comanda ancora gli AC) — scelta voluta: un sistema
+24/7 che protegge il comfort va dimostrato prima di affidargli il controllo.
+
+### Cosa fa
+Ogni 15 minuti, per ogni stanza sensorizzata, simula le 6 ore successive e un
+**arbitro** valuta le azioni candidate — `Off / Cool / Dry / Pre-raffrescamento`
+— scegliendo per priorità **temperatura → umidità → costo** (tariffa elettrica
+reale). Sa rispondere a: *"se non fai niente, tra quante ore questa stanza supera
+la soglia di comfort, e quanto costerebbe riportarla a posto?"*
+
+### Come funziona dentro
+- **Modello termico grey-box RC** (fisica, *non* una rete neurale black-box): a
+  2 conduttanze — stanza ↔ resto-casa e stanza ↔ esterno — con guadagni interni e
+  previsione **Open-Meteo**.
+- **Auto-calibrante**: impara i parametri di ogni stanza dagli *esperimenti
+  naturali* — la deriva libera quando l'AC è spento di notte o la stanza è vuota
+  — con un fit di traiettoria, senza taratura manuale.
+- Modello **umidità** accoppiato (psicrometrico) e modello di **occupazione** che
+  impara gli orari tipici di rientro (base per pre-raffrescare prima che torni a
+  casa).
+- Gira **interamente sul Raspberry Pi**, in locale, senza ML in cloud.
+
+### Prove concrete che funziona (misurate su dati reali)
+- Legge il presente alla perfezione: temperatura *attuale* prevista-vs-reale
+  **MAE 0.02–0.04 °C**.
+- Il modello termico prevede la **deriva libera (AC spento)** a **~0.15 °C a +1h,
+  ~0.34 °C a +2h** (stanza col sensore a 0.1 °C) — **battendo la baseline ingenua
+  "resta uguale"** a ogni orizzonte.
+- Dopo l'auto-calibrazione il **bias della previsione a +6h** sulla stanza meglio
+  campionata è **−0.28 °C** (sotto il grado), e la previsione a lungo termine
+  combacia con la realtà vissuta (una stanza che senza AC, nei giorni caldi,
+  arriva davvero a ~32 °C).
+
+### In cosa è diverso dai termostati smart comuni
+| Sistemi tipici | Questo MPC |
+|---|---|
+| **Reattivo** (agisce quando è già caldo) | **Predittivo** (agisce prima, orizzonte 2–6h) |
+| ML black-box, affamato di dati, opaco | **Fisica grey-box**, interpretabile, parsimonioso |
+| Dipendente dal cloud / vendor lock-in | **100% locale su Raspberry Pi** |
+| Ottimizza comfort *oppure* energia | **Comfort *e* energia insieme**, tariffa reale |
+| Parametri fissi | **Auto-calibrante** dalle derive naturali |
+
+> ⚠️ **Beta**: l'MPC è solo advisory e in sviluppo attivo. I parametri si
+> affinano man mano che si accumulano dati; non controlla (ancora) gli AC in
+> autonomia.
+
+---
+
 ## 🧰 Stack tecnico
 
 | Livello | Tecnologia |

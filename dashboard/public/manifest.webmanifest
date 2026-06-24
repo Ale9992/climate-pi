@@ -1,0 +1,10 @@
+{
+  "name": "Casa",
+  "short_name": "Casa",
+  "start_url": "/?touch=1",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#e8eaf2",
+  "theme_color": "#dbeafe",
+  "icons": []
+}
