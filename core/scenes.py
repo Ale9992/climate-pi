@@ -93,12 +93,16 @@ async def run_scene(name: str, cfg, engine, ac) -> dict:
                     temperature=action.temperature,
                     fan_speed="High", eco_mode="Powerful",
                 )
+                # Allinea lo stato atteso: alla scadenza dell'hold l'automazione
+                # NON deve scambiare la scena per un intervento manuale.
+                engine.mark_state(room.name, True, "Cool", action.temperature)
                 results.append({"room": room.name, "ok": True,
                                 "setpoint": action.temperature})
             else:  # "off"
                 engine.set_override(room.name, Action(power=False),
                                     minutes=SCENE_HOLD_MINUTES)
                 await ac.turn_off(room.panasonic_device_id)
+                engine.mark_state(room.name, False)
                 results.append({"room": room.name, "ok": True})
         except Exception as exc:  # noqa: BLE001 - un AC giu' non ferma gli altri
             logger.error("Scena '%s' su '%s' fallita: %s", name, room.name, exc)

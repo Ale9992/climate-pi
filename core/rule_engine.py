@@ -154,6 +154,19 @@ class RuleEngine:
             rt.override_action = None
         logger.info("Override rimosso su '%s'", room_name)
 
+    def mark_state(self, room_name: str, power: bool,
+                   mode: Optional[str] = None,
+                   temperature: Optional[float] = None) -> None:
+        """Allinea lo stato ATTESO (e is_on) a un comando applicato FUORI dal
+        process() — es. una SCENA. Senza questo, quando l'override della scena
+        scade, _detect_external_change scambierebbe lo stato lasciato dalla scena
+        per un intervento manuale e metterebbe la stanza in pausa 120 min."""
+        rt = self._runtime.setdefault(room_name, _RoomRuntime())
+        rt.is_on = bool(power)
+        rt.expected_power = bool(power)
+        rt.expected_mode = mode if power else None
+        rt.expected_temp = temperature if power else None
+
     def override_remaining_seconds(self, room_name: str) -> int:
         """Secondi residui di override (0 se non attivo)."""
         rt = self._runtime.get(room_name)
@@ -208,6 +221,10 @@ class RuleEngine:
             return
         if not room.panasonic_device_id:
             # Nessun AC associato: niente da comandare.
+            return
+        if getattr(room, "monitor_only", False):
+            # Stanza SOLO MONITORATA: il sensore registra ma non comandiamo l'AC
+            # (lo spegnimento forzato 03:00 resta gestito dallo scheduler).
             return
 
         rt = self._runtime.setdefault(room_name, _RoomRuntime())
