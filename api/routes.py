@@ -291,6 +291,39 @@ async def delete_override(room_name: str) -> dict:
 
 
 # ===========================================================================
+# Scene multi-stanza (comandi vocali Alexa: "protocollo afa", "spegni tutto")
+# ===========================================================================
+@router.get("/scenes")
+async def get_scenes() -> dict:
+    """Elenco delle scene disponibili (per il bridge vocale / debug)."""
+    from core import scenes
+    return {"scenes": scenes.scene_names()}
+
+
+@router.post("/scene/{scene_name}")
+async def post_scene(scene_name: str) -> dict:
+    """
+    Esegue una scena su TUTTI i condizionatori (es. 'afa' = massimo freddo,
+    'off' = spegni tutto). Applica un override che sospende l'automazione per
+    un po', cosi' la scena non viene disfatta al ciclo successivo.
+
+    E' il punto chiamato dal bridge Matter quando Alexa accende l'interruttore
+    virtuale corrispondente.
+    """
+    from core import scenes
+    cfg = _require(ctx.config, "config")
+    engine = _require(ctx.rule_engine, "rule_engine")
+    ac = _require(ctx.ac_controller, "ac_controller")
+    try:
+        return await scenes.run_scene(scene_name, cfg, engine, ac)
+    except KeyError:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Scena '{scene_name}' sconosciuta (disponibili: "
+                   f"{', '.join(scenes.scene_names())})")
+
+
+# ===========================================================================
 # Luci IKEA
 # ===========================================================================
 @router.get("/lights")
