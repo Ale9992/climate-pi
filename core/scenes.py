@@ -2,20 +2,22 @@
 core/scenes.py — Scene multi-stanza attivabili a comando (es. via Alexa).
 
 Una "scena" applica in un colpo solo uno stato a TUTTI i condizionatori e
-registra un override che SOSPENDE l'automazione per un po' (cosi' il rule engine,
-la presenza e il comfort non la disfano al ciclo successivo). Pensata per i
-comandi vocali:
+registra un override BREVE che sospende l'automazione giusto il tempo del "colpo"
+(poi la programmazione normale riprende: la scena si INTEGRA col sistema, non lo
+scavalca per ore). Pensata per i comandi vocali:
 
-  - "afa" -> tutti gli AC al massimo freddo (Cool 16°C, ventola High, Powerful)
-  - "off" -> tutti i condizionatori spenti
+  - "afa" -> accende TUTTI gli AC in Powerful, alla temperatura di boost di OGNI
+             stanza (i nostri parametri di comfort), ventola High. NON forza 16°
+             fisso: rispetta i setpoint del sistema e dopo l'hold ridà il
+             controllo all'automazione.
+  - "off" -> spegne tutti i condizionatori.
 
-I PARAMETRI delle scene si modificano QUI sotto: la frase su Alexa resta identica,
-cambia solo cosa fa la scena. Non serve toccare nulla lato assistente vocale.
+PARAMETRI MODIFICABILI: vedi le costanti qui sotto. La frase su Alexa resta
+identica; cambia solo cosa fa la scena.
 
 Note di precedenza (volute):
-  - Lo spegnimento forzato notturno (fascia force_off_time -> night_off_end, es.
-    03:00) ha COMUNQUE la precedenza: durante quella fascia il rule engine spegne
-    al ciclo dopo, anche con la scena "afa" attiva (vedi rule_engine._in_night_window).
+  - Lo spegnimento forzato notturno (fascia force_off_time -> night_off_end) ha
+    COMUNQUE la precedenza (rule_engine._in_night_window).
   - Le stanze monitor_only vengono comandate lo stesso da una scena: e' un comando
     MANUALE esplicito dell'utente ("accendi tutti"), non automazione.
 """
@@ -23,82 +25,81 @@ Note di precedenza (volute):
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from core.config import Action
 
 logger = logging.getLogger("climate.scenes")
 
-# Quanto a lungo la scena "tiene" sospendendo l'automazione (minuti).
-SCENE_HOLD_MINUTES = 180
+# Quanto a lungo la scena "tiene" sospendendo l'automazione (minuti). Breve:
+# e' un "colpo" iniziale, poi l'automazione normale riprende. Il Powerful sui
+# Panasonic si auto-esaurisce in ~20 min, quindi 30 copre il boost e poco oltre.
+SCENE_HOLD_MINUTES = 30
 
-# --- Definizione delle scene (PARAMETRI MODIFICABILI) ----------------------
-# Ogni scena e' lo stato applicato a OGNI condizionatore. power=False = spegni.
-SCENES: dict[str, dict[str, Any]] = {
-    # "Protocollo afa": massima potenza di raffrescamento.
-    "afa": {
-        "power": True,
-        "mode": "Cool",
-        "temperature": 16,      # minimo Panasonic
-        "fan_speed": "High",    # ventola massima
-        "eco_mode": "Powerful",  # boost Panasonic (la vera "massima potenza")
-    },
-    # "Spegni tutto": tutti i condizionatori OFF.
-    "off": {
-        "power": False,
-    },
-}
+# Temperatura di ripiego per stanze SENZA banda di comfort estiva (es. Salotto).
+AFA_FALLBACK_SETPOINT = 22
+
+SCENE_NAMES = ["afa", "off"]
 
 
 def scene_names() -> list[str]:
     """Nomi delle scene disponibili."""
-    return list(SCENES.keys())
+    return list(SCENE_NAMES)
+
+
+def _afa_setpoint(room) -> float:
+    """Temperatura dell'afa per la stanza: il boost_setpoint estivo (i NOSTRI
+    parametri), o il setpoint normale, o il fallback se la stanza non ha comfort."""
+    comfort = getattr(room, "comfort", None)
+    summer = getattr(comfort, "summer", None) if comfort else None
+    if summer is not None:
+        return summer.boost_setpoint or summer.setpoint or AFA_FALLBACK_SETPOINT
+    return AFA_FALLBACK_SETPOINT
+
+
+def _afa_action(room) -> Action:
+    """Azione afa per UNA stanza: Cool + Powerful + High al setpoint di boost."""
+    return Action(
+        power=True,
+        mode="Cool",
+        temperature=_afa_setpoint(room),
+        fan_speed="High",
+        eco_mode="Powerful",
+    )
 
 
 async def run_scene(name: str, cfg, engine, ac) -> dict:
     """
     Esegue una scena su tutti i condizionatori configurati.
 
-    Per ogni stanza con un AC:
-      1) registra l'override (sospende l'automazione per SCENE_HOLD_MINUTES);
-      2) applica lo stato della scena (con eco_mode, che apply_override_now non
-         passerebbe — per questo usiamo set_override + set_device_state diretti).
-
-    Solleva KeyError se la scena non esiste. Non solleva sui singoli Az falliti:
-    raccoglie l'esito per stanza (un AC irraggiungibile non blocca gli altri).
+    Per ogni stanza con un AC: registra un override breve (sospende l'automazione
+    per SCENE_HOLD_MINUTES) e applica lo stato. L'afa usa il setpoint di boost
+    PER STANZA (non un valore fisso). Solleva KeyError se la scena non esiste; non
+    solleva sui singoli AC falliti (un AC giu' non blocca gli altri).
     """
-    spec = SCENES.get(name)
-    if spec is None:
+    if name not in SCENE_NAMES:
         raise KeyError(name)
-
-    power = bool(spec.get("power", True))
-    action = Action(
-        power=power,
-        mode=spec.get("mode"),
-        temperature=spec.get("temperature"),
-        fan_speed=spec.get("fan_speed"),
-        eco_mode=spec.get("eco_mode"),
-    )
 
     results: list[dict] = []
     for room in cfg.rooms:
         if not room.panasonic_device_id:
             continue
-        # Hold: sospende il rule engine su questa stanza (senza inviare nulla).
-        engine.set_override(room.name, action, minutes=SCENE_HOLD_MINUTES)
         try:
-            if power:
+            if name == "afa":
+                action = _afa_action(room)
+                engine.set_override(room.name, action, minutes=SCENE_HOLD_MINUTES)
                 await ac.set_device_state(
                     room.panasonic_device_id,
-                    power=True,
-                    mode=spec.get("mode"),
-                    temperature=spec.get("temperature"),
-                    fan_speed=spec.get("fan_speed"),
-                    eco_mode=spec.get("eco_mode"),
+                    power=True, mode="Cool",
+                    temperature=action.temperature,
+                    fan_speed="High", eco_mode="Powerful",
                 )
-            else:
+                results.append({"room": room.name, "ok": True,
+                                "setpoint": action.temperature})
+            else:  # "off"
+                engine.set_override(room.name, Action(power=False),
+                                    minutes=SCENE_HOLD_MINUTES)
                 await ac.turn_off(room.panasonic_device_id)
-            results.append({"room": room.name, "ok": True})
+                results.append({"room": room.name, "ok": True})
         except Exception as exc:  # noqa: BLE001 - un AC giu' non ferma gli altri
             logger.error("Scena '%s' su '%s' fallita: %s", name, room.name, exc)
             results.append({"room": room.name, "ok": False, "error": str(exc)})
@@ -108,7 +109,7 @@ async def run_scene(name: str, cfg, engine, ac) -> dict:
                 name, ok, len(results), SCENE_HOLD_MINUTES)
     return {
         "scene": name,
-        "applied": power and "on" or "off",
+        "applied": "on" if name == "afa" else "off",
         "rooms": results,
         "hold_minutes": SCENE_HOLD_MINUTES,
     }
