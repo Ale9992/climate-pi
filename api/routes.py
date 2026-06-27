@@ -414,7 +414,7 @@ async def get_weather() -> WeatherState:
     now_hour = datetime.now().strftime("%Y-%m-%dT%H:00")
     forecast = [
         WeatherPoint(time=t, temperature=round(v, 1) if v is not None else None)
-        for t, v in (payload.get("hourly") or [])
+        for t, v, _h in (payload.get("hourly") or [])
         if t >= now_hour
     ][:12]
     temp = payload.get("current")
