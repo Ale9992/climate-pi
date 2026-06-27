@@ -3766,3 +3766,91 @@ body { background:
     max-width: 76px;
   }
 }
+
+/* ===========================================================================
+   SMARTPHONE (<=640px) — override robusto, appeso in fondo (vince in cascata).
+   Forza colonna singola + controlli touch, niente overflow. Il kiosk/tablet
+   (>=700px) NON e' toccato da questo blocco.
+   =========================================================================== */
+@media (max-width: 640px) {
+  /* Layout a tutta larghezza: via i margini "vetro" che mangiano spazio. */
+  .layout {
+    margin: 0 !important;
+    border-radius: 0 !important;
+    max-width: 100% !important;
+    min-height: 100dvh;
+  }
+  .main { padding: 12px 12px 26px !important; gap: 12px !important; }
+
+  /* HOME e ROOM grid -> stack verticale: ogni card piena larghezza, una per
+     riga. Uso flex-column per azzerare TUTTI gli span/posizionamenti grid. */
+  .layout .home-grid,
+  .layout .room-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+  .layout .home-grid > *,
+  .layout .room-grid > * {
+    grid-column: auto !important;
+    grid-row: auto !important;
+    width: 100% !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    box-sizing: border-box;
+  }
+
+  /* HUD strip: griglia pulita 3 colonne, altezza auto (basta sovrapposizioni). */
+  .layout .hud-strip {
+    display: grid !important;
+    grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+    gap: 8px !important;
+    height: auto !important;
+  }
+  .layout .hud-badge { min-width: 0 !important; }
+
+  /* Header: niente overflow, lasciamo andare a capo e rimpiccioliamo il toggle. */
+  .topbar { flex-wrap: wrap !important; gap: 10px !important; }
+  .theme-toggle { margin-left: auto !important; }
+  .theme-toggle button {
+    padding: 7px 9px !important;
+    font-size: 0.7rem !important;
+  }
+
+  /* Sub-griglie interne che potrebbero stringere troppo. */
+  .layout .home-room-list { grid-template-columns: 1fr !important; }
+  .layout .home-stat-list,
+  .layout .system-list { grid-template-columns: 1fr !important; }
+
+  /* TERMOSTATO e card stanza: niente overflow orizzontale.
+     repeat(4,1fr) non si restringe sotto il contenuto -> minmax(0,1fr). */
+  .layout .room-grid .card { overflow-x: clip; }
+  .layout .thermo,
+  .layout .thermo-slider,
+  .layout .thermo-top,
+  .layout .swing-layout { max-width: 100% !important; min-width: 0 !important; }
+  .layout .thermo-bar {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) !important;
+    gap: 7px !important;
+  }
+  .layout .thermo-bar > * { min-width: 0 !important; }
+  .layout .eco-row {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) !important;
+  }
+  .layout .thermo-top { flex-wrap: wrap !important; gap: 8px !important; }
+
+  /* CONTENIMENTO: impedisce a main/grid di sforare la larghezza schermo
+     (catena flex: min-width:0 ad ogni livello + safety net overflow-x). */
+  html, body, #root { max-width: 100%; overflow-x: hidden; }
+  .layout { overflow-x: hidden; }
+  .layout .main {
+    min-width: 0 !important;
+    max-width: 100% !important;
+    overflow-x: hidden;
+  }
+  .layout .home-grid,
+  .layout .room-grid {
+    min-width: 0 !important;
+    max-width: 100% !important;
+  }
+}
