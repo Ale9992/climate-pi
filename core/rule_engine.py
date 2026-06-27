@@ -51,6 +51,9 @@ class _RoomRuntime:
     # transizione fuori->casa) e data dell'ultimo boost Powerful di prima comparsa.
     person_was_home: Optional[bool] = None
     last_boost_date: Optional[str] = None
+    # Eccezione notturna: epoch di fine della finestra gestita di 2h concessa
+    # quando un AC viene acceso in fascia 03-08 (0 = nessuna finestra attiva).
+    night_exc_until: float = 0.0
 
 
 def comfort_decision(
@@ -121,6 +124,9 @@ class RuleEngine:
         # Durata override quando si rileva un comando manuale esterno
         # (telecomando / app Panasonic): poi l'automazione riprende.
         self._external_override_minutes = 120
+        # Durata della finestra gestita concessa se un AC viene acceso in fascia
+        # notturna (03-08): max 2h, poi spegne. Una nuova accensione la riapre.
+        self._NIGHT_EXC_SECONDS = 2 * 3600
         self._runtime: dict[str, _RoomRuntime] = {
             room.name: _RoomRuntime() for room in config.rooms
         }
@@ -230,20 +236,57 @@ class RuleEngine:
         rt = self._runtime.setdefault(room_name, _RoomRuntime())
         boost_now = False  # prima comparsa della persona nel giorno + stanza calda
 
-        # 0) Fascia notturna: dalle force_off_time alle night_off_end gli AC
-        #    DEVONO restare spenti (regola dura, vince su tutto). Se acceso, spegne.
+        # 0) Fascia notturna (force_off_time -> night_off_end): di norma gli AC
+        #    restano spenti. ECCEZIONE DINAMICA: se in questa fascia un AC viene
+        #    ACCESO (rientro notturno col caldo), gli si concede una finestra
+        #    GESTITA di max 2h durante la quale gira il COMFORT normale (autonomia
+        #    piena: raffredda al setpoint, si spegne quando a posto, riaccende se
+        #    serve). Scaduta la finestra -> spegne e sospende. Una NUOVA accensione
+        #    riapre una finestra di 2h. Al confine delle night_off_end questo ramo
+        #    non si attiva piu' e subentra il giorno normale (handover fluido: se la
+        #    finestra "sborderebbe" oltre le 08 non si spegne nulla).
         if self._in_night_window():
-            if rt.is_on:
-                logger.info("'%s': fascia notturna -> spengo.", room_name)
-                try:
-                    await self._ac.turn_off(room.panasonic_device_id)
-                    rt.is_on = False
-                    rt.expected_power = False
-                except Exception as exc:  # noqa: BLE001
-                    logger.error("Spegnimento notturno '%s' fallito: %s", room_name, exc)
-            else:
-                logger.debug("'%s': fascia notturna, salto (no accensioni).", room_name)
-            return
+            now = time.time()
+            try:
+                st = await self._ac.get_device_state(
+                    room.panasonic_device_id, use_cache=True)
+                real_on = (st.get("power") == "On")
+            except Exception:  # noqa: BLE001 - cloud giu': usa l'ultimo stato noto
+                st, real_on = {}, bool(rt.is_on)
+            rt.is_on = real_on
+
+            # Finestra scaduta: chiudi e, se ancora acceso, spegni.
+            if rt.night_exc_until and now >= rt.night_exc_until:
+                rt.night_exc_until = 0.0
+                if real_on:
+                    logger.info("'%s': finestra notturna 2h scaduta -> spengo.",
+                                room_name)
+                    try:
+                        await self._ac.turn_off(room.panasonic_device_id)
+                        rt.is_on = False
+                        rt.expected_power = False
+                    except Exception as exc:  # noqa: BLE001
+                        logger.error("Spegnimento notturno '%s' fallito: %s",
+                                     room_name, exc)
+                return
+
+            # Nessuna finestra attiva:
+            if not rt.night_exc_until:
+                if real_on:
+                    # Accensione in fascia notturna -> apre finestra 2h e allinea
+                    # l'atteso (cosi' non scatta il falso "intervento esterno").
+                    rt.night_exc_until = now + self._NIGHT_EXC_SECONDS
+                    rt.expected_power = True
+                    rt.expected_mode = st.get("mode")
+                    rt.expected_temp = st.get("target_temperature")
+                    logger.info("'%s': acceso in fascia notturna -> finestra "
+                                "gestita 2h (la governa il comfort).", room_name)
+                    # cade nel normale processing comfort qui sotto
+                else:
+                    logger.debug("'%s': fascia notturna, resta spento.", room_name)
+                    return
+            # Finestra attiva (in corso o appena aperta): NON forzo lo spegnimento,
+            # lascio decidere al comfort -> prosegue col normale processing sotto.
 
         # 1) Override attivo? Il rule engine resta sospeso per questa stanza.
         if self.is_overridden(room_name):
