@@ -25,6 +25,10 @@ export const api = {
   getHistory: (room, hours = 24) =>
     req(`/rooms/${encodeURIComponent(room)}/history?hours=${hours}`),
 
+  // Caldaia (relè Sonoff in LAN) — stanza Cucina
+  getBoiler: () => req('/boiler'),
+  setBoiler: (on) => req('/boiler', { method: 'POST', body: JSON.stringify({ on }) }),
+
   // Luci IKEA
   getLights: () => req('/lights'),
   setLight: (id, body) =>

@@ -49,6 +49,7 @@ class AppContext:
     presence_manager: object = None
     light_controller: object = None
     weather_provider: object = None
+    boiler_controller: object = None
     # Flag di stato connessioni, aggiornati dai componenti.
     dirigera_connected: bool = True
     panasonic_connected: bool = True
@@ -321,6 +322,35 @@ async def post_scene(scene_name: str) -> dict:
             status_code=404,
             detail=f"Scena '{scene_name}' sconosciuta (disponibili: "
                    f"{', '.join(scenes.scene_names())})")
+
+
+# ===========================================================================
+# Caldaia (relè Sonoff in LAN) — stanza a sé, toggle ON/OFF
+# ===========================================================================
+@router.get("/boiler")
+async def get_boiler() -> dict:
+    """Stato del relè caldaia (letto in locale via mDNS). enabled=False se assente."""
+    b = ctx.boiler_controller
+    if b is None:
+        return {"enabled": False}
+    st = b.get_state()
+    cfg = ctx.config
+    st["room"] = cfg.boiler.room if (cfg and getattr(cfg, "boiler", None)) else "Cucina"
+    return st
+
+
+@router.post("/boiler")
+async def post_boiler(body: dict) -> dict:
+    """Accende/spegne la caldaia: {"on": true|false}. Comando locale cifrato."""
+    b = _require(ctx.boiler_controller, "boiler")
+    on = bool(body.get("on"))
+    try:
+        ok = await b.set(on)
+    except Exception as exc:  # noqa: BLE001
+        raise HTTPException(status_code=502, detail=f"Comando caldaia fallito: {exc}")
+    if not ok:
+        raise HTTPException(status_code=502, detail="Il device ha rifiutato il comando")
+    return {"status": "ok", "on": on}
 
 
 # ===========================================================================

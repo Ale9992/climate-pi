@@ -8,6 +8,7 @@ import {
   mdiBrightness5, mdiGauge, mdiWifi, mdiAccessPoint, mdiCloudCheckOutline,
   mdiAlertCircleOutline, mdiClockOutline, mdiWeatherPartlyCloudy,
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
+  mdiWaterBoiler, mdiRadiator,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -386,6 +387,30 @@ function TimelineCard({ logs }) {
   )
 }
 
+function BoilerCard({ boiler, onToggle }) {
+  const [busy, setBusy] = useState(false)
+  const on = boiler?.on
+  const click = async () => {
+    setBusy(true)
+    try { await onToggle(!on) } finally { setBusy(false) }
+  }
+  return (
+    <div className="boiler-card">
+      <div className={`boiler-orb ${on ? 'on' : ''}`}>
+        <Icon path={mdiWaterBoiler} size={2.3} />
+      </div>
+      <div className="boiler-state">{on == null ? '—' : on ? 'Accesa' : 'Spenta'}</div>
+      <div className="boiler-sub">
+        relè in rete locale{boiler?.age_seconds != null ? ` · letto ${boiler.age_seconds}s fa` : ''}
+      </div>
+      <button className={`boiler-toggle ${on ? 'on' : ''}`} onClick={click} disabled={busy || on == null}>
+        {busy ? '…' : on ? 'Spegni' : 'Accendi'}
+      </button>
+      <div className="boiler-note">Comandata anche dal cronotermostato (ingresso S1/S2)</div>
+    </div>
+  )
+}
+
 function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config }) {
   const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
   const totalEnergy = rooms.reduce((s, r) => s + (r.ac?.reachable ? (r.ac.energy_today_kwh || 0) : 0), 0)
@@ -492,6 +517,7 @@ export default function App() {
   const [section, setSection] = useState('overview')  // overview | room | history | config | logs
   const [activeRoom, setActiveRoom] = useState(null)
   const [weather, setWeather] = useState({})
+  const [boiler, setBoiler] = useState({})
   const [now, setNow] = useState(new Date())
   const [themeMode, setThemeMode] = useState('auto')
   const [autoTheme, setAutoTheme] = useState(() => autoThemeFor(new Date()))
@@ -509,12 +535,17 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [r, s, l, w] = await Promise.all([
-        api.getRooms(), api.getStatus(), api.getLights(), api.getWeather().catch(() => ({})),
+      const [r, s, l, w, b] = await Promise.all([
+        api.getRooms(), api.getStatus(), api.getLights(),
+        api.getWeather().catch(() => ({})), api.getBoiler().catch(() => ({})),
       ])
-      setRooms(r); setStatus(s); setLights(l); setWeather(w); setLastRefresh(new Date()); setError(null)
+      setRooms(r); setStatus(s); setLights(l); setWeather(w); setBoiler(b)
+      setLastRefresh(new Date()); setError(null)
     } catch (e) { setError(e.message) }
   }, [])
+  const toggleBoiler = useCallback(async (on) => {
+    try { await api.setBoiler(on); await refresh() } catch (e) { setError(e.message) }
+  }, [refresh])
   const refreshLogs = useCallback(async () => { try { setLogs(await api.getLogs(100)) } catch { /**/ } }, [])
   const refreshConfig = useCallback(async () => { try { setConfig(await api.getConfig()) } catch { /**/ } }, [])
 
@@ -538,7 +569,9 @@ export default function App() {
   const norm = (s) => (s || '').trim()
   const acRoomNames = rooms.map((r) => norm(r.name))
   const lightRoomNames = Object.keys(lights).map(norm)
-  const allRooms = [...new Set([...acRoomNames, ...lightRoomNames])]
+  const boilerRoom = boiler?.enabled ? norm(boiler.room) : null
+  const allRooms = [...new Set([...acRoomNames, ...lightRoomNames,
+    ...(boilerRoom ? [boilerRoom] : [])])]
   // stanza attiva di default: la prima con AC, o la prima in assoluto
   const curRoom = activeRoom || acRoomNames[0] || allRooms[0]
   const acOfRoom = rooms.find((r) => norm(r.name) === curRoom)
@@ -572,15 +605,17 @@ export default function App() {
         <nav className="side-rooms">
           {allRooms.map((r) => {
             const hasAc = acRoomNames.includes(r)
+            const isBoiler = r === boilerRoom
             const lk = Object.keys(lights).find((k) => norm(k) === r)
             const nLights = lk ? lights[lk].length : 0
             const active = section === 'room' && r === curRoom
+            const icon = hasAc ? mdiThermometer : isBoiler ? mdiRadiator : mdiLightbulbVariant
             return (
               <button key={r} className={active ? 'on' : ''}
                 onClick={() => { setSection('room'); setActiveRoom(r); setNavOpen(false) }} title={r}>
-                <Icon path={hasAc ? mdiThermometer : mdiLightbulbVariant} size={0.85} />
+                <Icon path={icon} size={0.85} />
                 <span className="sr-name">{r}</span>
-                <span className="sr-meta">{hasAc ? 'AC' : ''}{hasAc && nLights ? '·' : ''}{nLights ? `${nLights}💡` : ''}</span>
+                <span className="sr-meta">{hasAc ? 'AC' : ''}{isBoiler ? 'Caldaia' : ''}{(hasAc || isBoiler) && nLights ? '·' : ''}{nLights ? `${nLights}💡` : ''}</span>
               </button>
             )
           })}
@@ -669,6 +704,12 @@ export default function App() {
                 <div className="card span-thermo">
                   <div className="card-head"><h3>Climatizzatore · {curRoom}</h3></div>
                   <Thermostat room={acOfRoom} onAction={refresh} />
+                </div>
+              )}
+              {curRoom === boilerRoom && (
+                <div className="card span-thermo">
+                  <div className="card-head"><h3>Caldaia · {curRoom}</h3></div>
+                  <BoilerCard boiler={boiler} onToggle={toggleBoiler} />
                 </div>
               )}
               <RoomLights room={curRoom} lights={lightsOfRoom} onChange={refresh} />

@@ -29,3 +29,5 @@ fritzconnection==1.15.1
 
 # --- BLE -------------------------------------------------------------------
 bleak==3.0.2                         # lettura passiva sensori SwitchBot (switchbot_reader)
+cryptography>=42
+zeroconf>=0.130

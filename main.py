@@ -32,6 +32,7 @@ import dirigera
 
 from api import routes
 from core.ac_controller import ACController
+from core.boiler import BoilerController
 from core.config import load_config
 from core.light_controller import LightController
 from core.mpc_advisor import MpcAdvisor
@@ -163,8 +164,9 @@ async def run() -> None:
     season_manager = SeasonManager(cfg.season, ac)
 
     # --- Rilevamento presenza (FRITZ!Box) ---
+    # Le stanze monitor_only NON vengono spente alla transizione casa-vuota.
     ac_device_ids = [r.panasonic_device_id for r in cfg.rooms
-                     if r.panasonic_device_id]
+                     if r.panasonic_device_id and not r.monitor_only]
     presence_manager = PresenceManager(cfg.presence, ac, ac_device_ids, database=db)
 
     # --- Luci IKEA (stesso hub Dirigera) ---
@@ -199,12 +201,20 @@ async def run() -> None:
     #     comanda). Gira il modello validato in avanti + meteo, logga i consigli. ---
     mpc_advisor = MpcAdvisor(cfg, db, weather, presence_manager=presence_manager)
 
+    # --- Relè caldaia Sonoff (eWeLink LAN), se configurato: stanza a sé (Cucina),
+    #     controllo locale cifrato + lettura stato passiva via mDNS. ---
+    boiler = None
+    if cfg.boiler and cfg.boiler.enabled:
+        boiler = BoilerController(
+            cfg.boiler.deviceid, cfg.boiler.devicekey,
+            ip=cfg.boiler.ip, port=cfg.boiler.port, enabled=True)
+
     # --- Contesto API ---
     routes.init_context(
         config=cfg, database=db, ac_controller=ac, rule_engine=engine,
         scheduler=scheduler, season_manager=season_manager,
         presence_manager=presence_manager, light_controller=light_controller,
-        weather_provider=weather,
+        weather_provider=weather, boiler_controller=boiler,
         dirigera_connected=True, panasonic_connected=panasonic_ok,
     )
 
@@ -221,6 +231,8 @@ async def run() -> None:
     await switchbot_reader.start()
     await remote_sensor_reader.start()
     await mpc_advisor.start()
+    if boiler is not None:
+        await boiler.start()
 
     # --- Warm-up cache AC: pre-carica stato + energia in background, cosi' la
     #     prima apertura della dashboard e' gia' istantanea (niente attesa cloud).
@@ -284,6 +296,8 @@ async def run() -> None:
                 logger.warning("Teardown '%s' non pulito: %s", name, exc)
 
         warm_task.cancel()
+        if boiler is not None:
+            await _safe(boiler.stop(), "boiler")
         await _safe(mpc_advisor.stop(), "mpc_advisor")
         await _safe(remote_sensor_reader.stop(), "remote_sensor_reader")
         await _safe(switchbot_reader.stop(), "switchbot_reader")

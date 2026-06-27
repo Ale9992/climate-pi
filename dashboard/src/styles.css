@@ -3963,3 +3963,33 @@ body { background:
     grid-column: 1 !important; grid-row: auto !important;
   }
 }
+
+/* ===========================================================================
+   CALDAIA (stanza Cucina) — card semplice con toggle ON/OFF
+   =========================================================================== */
+.boiler-card {
+  display: flex; flex-direction: column; align-items: center; gap: 10px;
+  padding: 18px 16px 22px; text-align: center;
+}
+.boiler-orb {
+  width: 120px; height: 120px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(120, 140, 170, 0.12); color: var(--muted);
+  transition: background .25s, color .25s, box-shadow .25s;
+}
+.boiler-orb.on {
+  background: radial-gradient(circle at 50% 40%, #ffd9b0, #f0a868);
+  color: #b4480e; box-shadow: 0 12px 32px -8px rgba(240, 168, 104, 0.6);
+}
+.boiler-state { font-size: 1.5rem; font-weight: 750; color: var(--ink); }
+.boiler-sub { font-size: 0.78rem; color: var(--muted); }
+.boiler-toggle {
+  margin-top: 6px; padding: 12px 30px; border-radius: 999px; border: none;
+  cursor: pointer; font-size: 0.95rem; font-weight: 650;
+  background: var(--ink); color: #fff; box-shadow: var(--shadow-sm);
+  transition: transform .1s, opacity .2s;
+}
+.boiler-toggle.on { background: #c4631e; }
+.boiler-toggle:active { transform: scale(0.97); }
+.boiler-toggle:disabled { opacity: 0.5; cursor: default; }
+.boiler-note { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }

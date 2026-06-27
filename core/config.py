@@ -116,6 +116,11 @@ class Room:
     name: str
     ikea_sensor_id: Optional[str]
     panasonic_device_id: Optional[str]
+    # Alcuni sensori IKEA (es. TIMMERFLOTTE) espongono temperatura e umidita' come
+    # due sub-device separati (..._1 = temperatura, ..._2 = umidita'). Se impostato,
+    # l'umidita' della stanza viene letta da questo secondo id (il VINDSTYRKA invece
+    # ha tutto su ..._1 e questo resta vuoto).
+    ikea_humidity_sensor_id: Optional[str] = None
     rules: list[Rule] = field(default_factory=list)
     comfort: Optional[RoomComfort] = None
     # IP di un device-presenza (telefono): se impostato, questa stanza segue la
@@ -137,6 +142,10 @@ class Room:
     # rapido). Pensato per chi ha esigenze particolari (es. termoregolazione
     # alterata): trova la stanza gia' fresca al rientro.
     powerful_on_first_arrival: bool = False
+    # Se True: stanza SOLO MONITORATA. Il sensore continua a registrare T/umidita',
+    # ma il sistema NON controlla l'AC in automatico (no comfort, no spegnimento per
+    # presenza). Lo spegnimento forzato notturno delle 03:00 si applica COMUNQUE.
+    monitor_only: bool = False
 
 
 @dataclass
@@ -225,6 +234,18 @@ class Tariff:
 
 
 @dataclass
+class Boiler:
+    """Relè caldaia Sonoff (firmware eWeLink, modalità LAN). Controllo locale
+    cifrato: appare come stanza a sé (es. Cucina) con un semplice toggle ON/OFF."""
+    enabled: bool
+    room: str
+    deviceid: str
+    devicekey: str
+    ip: Optional[str] = None
+    port: int = 8081
+
+
+@dataclass
 class Config:
     dirigera_ip: str
     dirigera_token: str
@@ -243,6 +264,7 @@ class Config:
     # proprie si mettono in config.yaml -> location: {latitude, longitude}.
     latitude: float = 41.9
     longitude: float = 12.5
+    boiler: Optional[Boiler] = None
 
     # -- helper di lookup ---------------------------------------------------
     def get_room(self, name: str) -> Optional[Room]:
@@ -289,7 +311,9 @@ def _parse_room(raw: dict[str, Any]) -> Room:
     return Room(
         name=raw["name"],
         ikea_sensor_id=raw.get("ikea_sensor_id") or None,
+        ikea_humidity_sensor_id=raw.get("ikea_humidity_sensor_id") or None,
         panasonic_device_id=raw.get("panasonic_device_id") or None,
+        monitor_only=bool(raw.get("monitor_only", False)),
         rules=rules,
         comfort=_parse_comfort(raw.get("comfort")),
         presence_device_ip=raw.get("presence_device_ip") or None,
@@ -400,7 +424,20 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
 
     location = raw.get("location", {}) or {}
 
+    b = raw.get("boiler", {}) or {}
+    boiler = None
+    if b.get("deviceid") and b.get("devicekey"):
+        boiler = Boiler(
+            enabled=bool(b.get("enabled", True)),
+            room=str(b.get("room", "Cucina")),
+            deviceid=str(b["deviceid"]),
+            devicekey=str(b["devicekey"]),
+            ip=b.get("ip"),
+            port=int(b.get("port", 8081)),
+        )
+
     return Config(
+        boiler=boiler,
         latitude=float(location.get("latitude", 41.9)),
         longitude=float(location.get("longitude", 12.5)),
         dirigera_ip=dirigera.get("ip_address", ""),
