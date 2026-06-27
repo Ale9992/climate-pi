@@ -7,7 +7,7 @@ import {
   mdiLightningBolt, mdiHomeAccount, mdiHomeExportOutline, mdiLightbulbVariant,
   mdiBrightness5, mdiGauge, mdiWifi, mdiAccessPoint, mdiCloudCheckOutline,
   mdiAlertCircleOutline, mdiClockOutline, mdiWeatherPartlyCloudy,
-  mdiHomeThermometerOutline, mdiPowerPlugOutline,
+  mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -497,6 +497,9 @@ export default function App() {
   const [autoTheme, setAutoTheme] = useState(() => autoThemeFor(new Date()))
   const [error, setError] = useState(null)
   const [lastRefresh, setLastRefresh] = useState(null)
+  const [navOpen, setNavOpen] = useState(false)   // drawer mobile (hamburger)
+  // Tema come singolo bottone che cicla auto -> light -> dark -> auto.
+  const cycleTheme = () => setThemeMode((m) => (m === 'auto' ? 'light' : m === 'light' ? 'dark' : 'auto'))
   const params = new URLSearchParams(window.location.search)
   const isKiosk = params.get('kiosk') === '1'
   const isForcedTouch = params.get('touch') === '1' || params.get('mode') === 'touch'
@@ -552,12 +555,18 @@ export default function App() {
   const sunset = sunTime(now, false)
 
   return (
-    <div className={`layout ${isKiosk ? 'kiosk' : ''} ${isTouch ? 'touch' : ''}`}>
+    <div className={`layout ${isKiosk ? 'kiosk' : ''} ${isTouch ? 'touch' : ''} ${navOpen ? 'nav-open' : ''}`}>
+      {/* Backdrop del drawer mobile (chiude al tap fuori). */}
+      <div className="nav-backdrop" onClick={() => setNavOpen(false)} />
       {/* ===== SIDEBAR = STANZE (navigazione primaria) ===== */}
       <aside className="sidebar">
+        <button className="nav-close" onClick={() => setNavOpen(false)} title="Chiudi">
+          <Icon path={mdiClose} size={0.9} />
+        </button>
         <button className={`side-logo ${section === 'overview' ? 'on' : ''}`}
-          onClick={() => setSection('overview')} title="Home">
+          onClick={() => { setSection('overview'); setNavOpen(false) }} title="Home">
           <Icon path={mdiHomeVariant} size={1} />
+          <span className="side-logo-label">Home</span>
         </button>
 
         <nav className="side-rooms">
@@ -568,23 +577,23 @@ export default function App() {
             const active = section === 'room' && r === curRoom
             return (
               <button key={r} className={active ? 'on' : ''}
-                onClick={() => { setSection('room'); setActiveRoom(r) }} title={r}>
+                onClick={() => { setSection('room'); setActiveRoom(r); setNavOpen(false) }} title={r}>
                 <Icon path={hasAc ? mdiThermometer : mdiLightbulbVariant} size={0.85} />
                 <span className="sr-name">{r}</span>
                 <span className="sr-meta">{hasAc ? 'AC' : ''}{hasAc && nLights ? '·' : ''}{nLights ? `${nLights}💡` : ''}</span>
               </button>
             )
           })}
-          <button className="sr-add" onClick={() => setSection('config')} title="Aggiungi/Configura">
+          <button className="sr-add" onClick={() => { setSection('config'); setNavOpen(false) }} title="Aggiungi/Configura">
             <Icon path={mdiPlus} size={0.85} /><span className="sr-name">Stanza</span>
           </button>
         </nav>
 
         {/* sezioni di sistema in fondo */}
         <div className="side-sys">
-          <button className={section === 'history' ? 'on' : ''} onClick={() => setSection('history')} title="Consumi/Storico"><Icon path={mdiChartBox} size={0.9} /></button>
-          <button className={section === 'config' ? 'on' : ''} onClick={() => setSection('config')} title="Regole"><Icon path={mdiTuneVerticalVariant} size={0.9} /></button>
-          <button className={section === 'logs' ? 'on' : ''} onClick={() => { setSection('logs'); refreshLogs() }} title="Attività"><Icon path={mdiBellOutline} size={0.9} /></button>
+          <button className={section === 'history' ? 'on' : ''} onClick={() => { setSection('history'); setNavOpen(false) }} title="Consumi/Storico"><Icon path={mdiChartBox} size={0.9} /></button>
+          <button className={section === 'config' ? 'on' : ''} onClick={() => { setSection('config'); setNavOpen(false) }} title="Regole"><Icon path={mdiTuneVerticalVariant} size={0.9} /></button>
+          <button className={section === 'logs' ? 'on' : ''} onClick={() => { setSection('logs'); refreshLogs(); setNavOpen(false) }} title="Attività"><Icon path={mdiBellOutline} size={0.9} /></button>
         </div>
       </aside>
 
@@ -592,6 +601,9 @@ export default function App() {
       <div className="main">
         {/* HEADER */}
         <header className="topbar">
+          <button className="nav-burger" onClick={() => setNavOpen(true)} title="Menu">
+            <Icon path={mdiMenu} size={1} />
+          </button>
           <div className="welcome">
             <div className="avatar"><Icon path={mdiHomeAccount} size={1} /></div>
             <div>
@@ -599,6 +611,11 @@ export default function App() {
               <div className="welcome-sub">{dateStr} · {hh}:{mm}</div>
             </div>
           </div>
+          {/* Tema: bottone singolo che cicla (mobile). Le 3 voci restano per desktop. */}
+          <button className="theme-cycle" onClick={cycleTheme} title={`Tema: ${themeMode}`}>
+            <Icon path={theme === 'dark' ? mdiWeatherNight : mdiWeatherSunny} size={0.72} />
+            <span>{themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}</span>
+          </button>
           <div className="theme-toggle">
             <button className={themeMode === 'auto' ? 'on' : ''} onClick={() => setThemeMode('auto')} title={`Alba ${formatTime(sunrise)} · Tramonto ${formatTime(sunset)}`}>
               <Icon path={theme === 'dark' ? mdiWeatherNight : mdiWeatherSunny} size={0.7} /> Auto

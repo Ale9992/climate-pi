@@ -3854,3 +3854,112 @@ body { background:
     max-width: 100% !important;
   }
 }
+
+/* ===========================================================================
+   NAV MOBILE: hamburger + drawer a scomparsa + bottone tema singolo.
+   Base (desktop/kiosk): elementi mobile nascosti.
+   =========================================================================== */
+.nav-burger, .theme-cycle, .nav-close, .nav-backdrop, .side-logo-label { display: none; }
+
+@media (max-width: 640px) {
+  /* Header: hamburger a sinistra + bottone tema singolo, una riga sola. */
+  .topbar { flex-wrap: nowrap !important; gap: 9px !important; align-items: center; }
+  .topbar .avatar, .topbar .bell { display: none !important; }
+  .topbar .welcome { min-width: 0; flex: 1 1 auto; }
+  .topbar .welcome-sub { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+  .nav-burger {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 42px; height: 42px; flex: 0 0 auto; border: none; cursor: pointer;
+    border-radius: 13px; background: var(--glass-strong); color: var(--ink);
+    box-shadow: var(--shadow-sm);
+  }
+  .theme-toggle { display: none !important; }
+  .theme-cycle {
+    display: inline-flex; align-items: center; gap: 6px; flex: 0 0 auto;
+    margin-left: auto; padding: 9px 13px; border-radius: 999px; border: none;
+    cursor: pointer; background: var(--glass-strong); color: var(--ink);
+    font-size: 0.78rem; font-weight: 650; box-shadow: var(--shadow-sm);
+    white-space: nowrap;
+  }
+
+  /* SIDEBAR -> drawer da sinistra (off-canvas). */
+  .layout .sidebar {
+    position: fixed !important; top: 0; left: 0; bottom: 0;
+    width: min(82vw, 320px) !important; height: 100dvh !important;
+    flex-direction: column !important; align-items: stretch !important;
+    justify-content: flex-start !important;
+    overflow-y: auto !important; overflow-x: hidden !important;
+    background: var(--glass-strong) !important;
+    -webkit-backdrop-filter: blur(26px); backdrop-filter: blur(26px);
+    box-shadow: 18px 0 60px -16px rgba(30, 40, 70, 0.5) !important;
+    border-radius: 0 22px 22px 0 !important;
+    padding: 14px 14px 24px !important; gap: 8px !important;
+    transform: translateX(-104%); transition: transform .26s ease;
+    z-index: 60;
+  }
+  .layout.nav-open .sidebar { transform: translateX(0); }
+  .nav-backdrop {
+    display: block; position: fixed; inset: 0;
+    background: rgba(18, 26, 46, 0.45); z-index: 55;
+    opacity: 0; pointer-events: none; transition: opacity .26s;
+  }
+  .layout.nav-open .nav-backdrop { opacity: 1; pointer-events: auto; }
+
+  /* Contenuto del drawer: chiudi, Home con etichetta, voci verticali. */
+  .nav-close {
+    display: inline-flex; align-self: flex-end; width: 36px; height: 36px;
+    align-items: center; justify-content: center; border: none; cursor: pointer;
+    border-radius: 10px; background: transparent; color: var(--muted);
+  }
+  .layout .side-logo {
+    display: flex !important; align-items: center; gap: 10px; width: 100%;
+    justify-content: flex-start !important; padding: 11px 12px !important;
+    height: auto !important; border-radius: 14px;
+  }
+  .side-logo-label { display: inline; font-weight: 650; color: var(--ink); }
+  .layout .side-rooms {
+    flex-direction: column !important; gap: 6px !important;
+    align-items: stretch !important; width: 100%;
+  }
+  .layout .side-rooms button {
+    width: 100% !important; justify-content: flex-start !important;
+    padding: 11px 12px !important; flex: 0 0 auto !important;
+  }
+  .layout .sr-meta { display: inline !important; }
+  .layout .side-sys {
+    border-top: 1px solid var(--glass-hairline) !important; border-left: none !important;
+    padding-top: 10px !important; padding-left: 0 !important;
+    justify-content: center; margin-top: auto;
+  }
+
+  /* Voci stanza nel drawer: lista orizzontale (icona + nome a sinistra). */
+  .layout .side-rooms { align-items: stretch !important; }
+  .layout .side-rooms button {
+    width: 100% !important; flex-direction: row !important; gap: 10px !important;
+    justify-content: flex-start !important; align-items: center !important;
+    padding: 11px 12px !important;
+  }
+  .layout .side-rooms button .sr-name {
+    display: block !important; font-size: 0.9rem !important; text-align: left !important;
+    line-height: 1.2 !important; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  }
+  .layout .side-rooms button .sr-meta { display: inline !important; }
+
+  /* HERO "Casa abitata": stack interno + insights 2x2, più compatto. */
+  .layout .home-grid .home-hero {
+    grid-template-columns: 1fr !important;
+    padding: 18px !important; gap: 12px !important; min-height: 0 !important;
+  }
+  .layout .home-hero h2 { font-size: 1.7rem !important; }
+  .layout .home-hero-insights { grid-template-columns: 1fr !important; }
+  .layout .hero-facts { grid-template-columns: 1fr 1fr !important; }
+
+  /* METEO: stack verticale + previsione a tutta larghezza. */
+  .layout .weather-card {
+    grid-template-columns: 1fr !important; min-height: 0 !important;
+  }
+  .layout .weather-forecast {
+    grid-column: 1 !important; grid-row: auto !important;
+  }
+}
