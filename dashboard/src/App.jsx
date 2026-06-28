@@ -10,7 +10,7 @@ import {
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
   mdiWaterBoiler, mdiRadiator, mdiAirConditioner, mdiAccountGroup, mdiShieldCheck,
   mdiBrain, mdiCheckCircle, mdiWeatherWindy, mdiWhiteBalanceSunny, mdiUmbrellaOutline,
-  mdiChevronRight,
+  mdiChevronRight, mdiWaterOutline, mdiWeatherPouring,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -246,15 +246,15 @@ function Sparkline({ points }) {
 }
 
 function WeatherCard({ weather }) {
-  const forecast = (weather?.forecast || []).slice(0, 7)
+  const forecast = (weather?.forecast || []).slice(0, 6)
   const uvLabel = (u) => u == null ? '—' : u < 3 ? 'Basso' : u < 6 ? 'Moderato' : u < 8 ? 'Alto' : u < 11 ? 'Molto alto' : 'Estremo'
   const windLabel = (w) => w == null ? '—' : w < 12 ? 'Leggero' : w < 20 ? 'Moderato' : w < 39 ? 'Forte' : 'Burrasca'
   const humLabel = (h) => h == null ? '—' : h < 40 ? 'Bassa' : h <= 65 ? 'Buona' : 'Alta'
   const stats = [
-    { icon: mdiWhiteBalanceSunny, label: 'UV', value: weather?.uv_index != null ? `${weather.uv_index}` : '—', sub: uvLabel(weather?.uv_index) },
-    { icon: mdiUmbrellaOutline, label: 'Pioggia', value: weather?.precipitation_probability != null ? `${weather.precipitation_probability}%` : '—', sub: 'Probabilità' },
+    { icon: mdiWaterOutline, label: 'UV', value: weather?.uv_index != null ? `${weather.uv_index}` : '—', sub: uvLabel(weather?.uv_index) },
+    { icon: mdiWeatherPouring, label: 'Pioggia', value: weather?.precipitation_probability != null ? `${weather.precipitation_probability}%` : '—', sub: 'Probabilità' },
     { icon: mdiWeatherWindy, label: 'Vento', value: weather?.wind_speed != null ? `${weather.wind_speed} km/h` : '—', sub: windLabel(weather?.wind_speed) },
-    { icon: mdiWaterPercent, label: 'Umidità est.', value: weather?.humidity != null ? `${Math.round(weather.humidity)}%` : '—', sub: humLabel(weather?.humidity) },
+    { icon: mdiWaterOutline, label: 'Umidità est.', value: weather?.humidity != null ? `${Math.round(weather.humidity)}%` : '—', sub: humLabel(weather?.humidity) },
   ]
   return (
     <div className="card weather-card">
@@ -264,16 +264,18 @@ function WeatherCard({ weather }) {
       </div>
       <div className="wc-now">
         <div className="wc-left">
-          <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={2.2} /></span>
-          <div className="wc-temp">
-            <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
-            <span>{weather?.description || '—'}</span>
-            {weather?.apparent_temperature != null && <em>Percepita {Math.round(weather.apparent_temperature)}°</em>}
+          <div className="wc-now-top">
+            <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={2.3} /></span>
+            <div className="wc-temp">
+              <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
+              <span>{weather?.description || '—'}</span>
+            </div>
           </div>
+          {weather?.apparent_temperature != null && <em className="wc-feels">Percepita {Math.round(weather.apparent_temperature)}°</em>}
         </div>
         <div className="wc-chart">
           <div className="wc-hours">
-            {forecast.map((p) => <span key={p.time}>{(p.time || '').slice(11, 13)}</span>)}
+            {forecast.map((p) => <span key={p.time}>{(p.time || '').slice(11, 16)}</span>)}
           </div>
           <Sparkline points={forecast.map((p) => p.temperature)} />
           <div className="wc-temps">
@@ -284,7 +286,7 @@ function WeatherCard({ weather }) {
       <div className="wc-stats">
         {stats.map((s) => (
           <div key={s.label} className="wc-stat">
-            <span className="wc-st-ic"><Icon path={s.icon} size={0.66} /></span>
+            <span className="wc-st-ic"><Icon path={s.icon} size={0.95} /></span>
             <div className="wc-st-txt">
               <span>{s.label}</span>
               <strong>{s.value}</strong>

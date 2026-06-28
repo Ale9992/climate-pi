@@ -4109,29 +4109,32 @@ body { background:
 .weather-card .wc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
 .weather-card .wc-head h3 { margin: 0; }
 .wc-loc { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
-.wc-now { display: grid; grid-template-columns: minmax(120px, auto) 1fr; align-items: center; gap: 20px; }
-.wc-left { display: flex; align-items: center; gap: 12px; }
+.wc-now { display: grid; grid-template-columns: minmax(118px, auto) 1fr; align-items: start; gap: 16px; }
+.wc-left { display: flex; flex-direction: column; gap: 14px; }
+.wc-now-top { display: flex; align-items: center; gap: 12px; }
 .wc-ic { color: #e8a368; display: flex; flex: 0 0 auto; }
 .wc-temp { display: flex; flex-direction: column; line-height: 1.05; }
-.wc-temp strong { font-size: 2.6rem; font-weight: 800; color: var(--ink); }
-.wc-temp span { font-size: 0.9rem; color: var(--ink); font-weight: 600; }
-.wc-temp em { font-size: 0.78rem; color: var(--muted); font-style: normal; margin-top: 2px; }
-.wc-chart { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
-.wc-chart .spark { width: 100%; height: 44px; display: block; }
+.wc-temp strong { font-size: 2.7rem; font-weight: 800; color: var(--ink); }
+.wc-temp span { font-size: 0.9rem; color: var(--muted); font-weight: 500; }
+.wc-feels { font-size: 0.8rem; color: var(--muted); font-style: normal; }
+.wc-chart { min-width: 0; display: flex; flex-direction: column; gap: 4px; padding-top: 4px; }
+.wc-chart .spark { width: 100%; height: 46px; display: block; }
 .spark-line { fill: none; stroke: var(--indigo); stroke-width: 2; }
 .spark-dot { fill: var(--indigo); }
 .wc-hours, .wc-temps { display: flex; justify-content: space-between; }
-.wc-hours span { font-size: 0.62rem; color: var(--muted); }
-.wc-temps span { font-size: 0.66rem; color: var(--ink); font-weight: 600; }
-.wc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 18px; }
-.wc-stat { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 12px;
-  background: color-mix(in srgb, var(--muted) 9%, transparent); min-width: 0; }
-.wc-st-ic { width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
-  background: color-mix(in srgb, var(--indigo) 14%, transparent); color: var(--indigo); }
-.wc-st-txt { display: flex; flex-direction: column; line-height: 1.12; min-width: 0; }
-.wc-st-txt span { font-size: 0.64rem; color: var(--muted); }
-.wc-st-txt strong { font-size: 0.9rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
-.wc-st-txt em { font-size: 0.62rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wc-hours span, .wc-temps span { flex: 1; text-align: center; }
+.wc-hours span:first-child, .wc-temps span:first-child { text-align: left; }
+.wc-hours span:last-child, .wc-temps span:last-child { text-align: right; }
+.wc-hours span { font-size: 0.56rem; color: var(--muted); letter-spacing: -0.02em; }
+.wc-temps span { font-size: 0.68rem; color: var(--ink); font-weight: 600; }
+.wc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-top: 20px; }
+.wc-stat { display: flex; align-items: center; gap: 9px; padding: 11px 12px; border-radius: 14px;
+  border: 1px solid var(--glass-border); background: transparent; min-width: 0; }
+.wc-st-ic { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: var(--indigo); }
+.wc-st-txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.wc-st-txt span { font-size: 0.66rem; color: var(--muted); }
+.wc-st-txt strong { font-size: 1rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.wc-st-txt em { font-size: 0.64rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- Home Engine ---------------------------------------------------------- */
 .he-card .he-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
