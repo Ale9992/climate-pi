@@ -2057,11 +2057,12 @@ body { background:
 }
 
 .home-grid .hud-badge {
-  min-height: 42px;
-  padding: 6px 10px;
-  border-radius: 15px;
-  grid-template-columns: 20px 1fr;
+  min-height: 0;
+  padding: 7px 10px;
+  border-radius: 14px;
+  grid-template-columns: 18px 1fr;
   column-gap: 7px;
+  row-gap: 1px;
 }
 
 .home-grid .hud-badge span {
