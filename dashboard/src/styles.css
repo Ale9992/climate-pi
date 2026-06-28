@@ -4102,79 +4102,39 @@ body { background:
 .hs-list strong { font-size: 0.98rem; font-weight: 700; color: var(--ink); }
 .hs-list span { font-size: 0.74rem; color: var(--muted); }
 
-/* --- Meteo esterno -------------------------------------------------------- */
-.home2 > .weather-card {
-  display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  grid-template-columns: none;
-  min-height: 0;
-  padding: 24px 26px 22px;
-  border-radius: 26px;
-  background: rgba(255, 255, 255, 0.78);
-  border: 1px solid rgba(255, 255, 255, 0.92);
-  box-shadow: 0 18px 46px rgba(31, 42, 55, 0.10), 0 1px 0 rgba(255,255,255,0.85) inset;
-}
-.weather-card .wc-head { display: flex; align-items: baseline; gap: 10px; margin-bottom: 22px; }
-.weather-card .wc-head h3 { margin: 0; font-size: 1.08rem; font-weight: 800; color: #10172f; }
-.wc-loc { font-size: 0.78rem; color: #6c7588; font-weight: 700; }
-.wc-now {
-  display: grid;
-  grid-template-columns: minmax(240px, 0.8fr) minmax(300px, 1.2fr);
-  align-items: center;
-  gap: clamp(22px, 5vw, 58px);
-}
-.wc-left { display: flex; flex-direction: column; gap: 13px; min-width: 0; }
-.wc-now-top { display: flex; align-items: center; gap: 20px; }
-.wc-ic {
-  position: relative;
-  width: 72px;
-  height: 66px;
-  display: block;
-  flex: 0 0 auto;
-}
-.wc-ic svg { position: absolute; }
-.wc-ic .wc-sun { left: 0; top: 0; color: #f4b731; }
-.wc-ic .wc-cloud { right: 0; bottom: 0; color: #dfe8f3; filter: drop-shadow(0 3px 4px rgba(118, 132, 152, 0.16)); }
-.wc-temp { display: flex; flex-direction: column; line-height: 1.02; min-width: 0; }
-.wc-temp strong { font-size: clamp(3rem, 6vw, 4.2rem); font-weight: 800; color: #070c2a; letter-spacing: 0; }
-.wc-temp span { font-size: 0.98rem; color: #697386; font-weight: 700; margin-top: 5px; }
-.wc-temp.empty strong { font-size: 3rem; color: #111831; line-height: 0.9; }
-.wc-temp.empty span { color: #7b8495; }
-.wc-feels { margin-left: 92px; font-size: 0.86rem; color: #7b8495; font-style: normal; font-weight: 700; }
-.wc-chart { min-width: 0; display: flex; flex-direction: column; gap: 7px; padding-top: 2px; }
-.wc-chart .spark { width: 100%; height: 64px; display: block; overflow: visible; }
-.spark-line { fill: none; stroke: #176fd5; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.spark-dot { fill: #176fd5; stroke: #f8fbff; stroke-width: 2; }
-.wc-hours, .wc-temps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); align-items: center; }
-.wc-hours span, .wc-temps span { text-align: center; min-width: 0; }
-.wc-hours span { font-size: 0.74rem; color: #606b7e; font-weight: 700; }
-.wc-temps span { font-size: 0.84rem; color: #111831; font-weight: 800; }
-.wc-stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 14px; margin-top: 26px; }
-.wc-stat {
-  display: flex;
-  align-items: center;
-  gap: 13px;
-  min-width: 0;
-  padding: 15px 16px;
-  border-radius: 16px;
-  border: 1px solid rgba(218, 225, 235, 0.82);
-  background: rgba(255, 255, 255, 0.52);
-  box-shadow: 0 8px 22px rgba(31, 42, 55, 0.045);
-}
-.wc-st-ic {
-  width: 30px;
-  height: 30px;
-  flex: 0 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #176fd5;
-}
-.wc-st-txt { display: flex; flex-direction: column; line-height: 1.12; min-width: 0; }
-.wc-st-txt span { font-size: 0.72rem; color: #687386; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.wc-st-txt strong { font-size: 1.08rem; font-weight: 800; color: #111831; white-space: nowrap; margin-top: 4px; }
-.wc-st-txt em { font-size: 0.72rem; color: #6f798b; font-style: normal; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 3px; }
+/* --- Meteo esterno (card DEDICATA .wx-card, scoped per battere le regole
+   .wc-* non prefissate scritte altrove e stare nella colonna 1/3) ---------- */
+.wx-card { display: flex; flex-direction: column; align-items: stretch; min-height: 0; }
+.wx-card .wc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
+.wx-card .wc-head h3 { margin: 0; }
+.wx-card .wc-loc { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
+.wx-card .wc-now { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
+.wx-card .wc-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
+.wx-card .wc-now-top { display: flex; align-items: center; gap: 11px; }
+.wx-card .wc-ic { position: relative; width: 56px; height: 50px; flex: 0 0 auto; display: block; }
+.wx-card .wc-ic svg { position: absolute; }
+.wx-card .wc-ic .wc-sun { left: 0; top: -3px; color: #f4b731; }
+.wx-card .wc-ic .wc-cloud { right: 0; bottom: 0; color: #cfe0f0; filter: drop-shadow(0 2px 3px rgba(118,132,152,0.18)); }
+.wx-card .wc-temp { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
+.wx-card .wc-temp strong { font-size: 2.3rem; font-weight: 800; color: var(--ink); }
+.wx-card .wc-temp span { font-size: 0.84rem; color: var(--muted); font-weight: 500; }
+.wx-card .wc-feels { font-size: 0.78rem; color: var(--muted); font-style: normal; }
+.wx-card .wc-chart { min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+.wx-card .wc-chart .spark { width: 100%; height: 44px; display: block; overflow: visible; }
+.wx-card .spark-line { fill: none; stroke: var(--indigo); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.wx-card .spark-dot { fill: var(--indigo); stroke: #f8fbff; stroke-width: 1.5; }
+.wx-card .wc-hours, .wx-card .wc-temps { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); }
+.wx-card .wc-hours span, .wx-card .wc-temps span { text-align: center; min-width: 0; }
+.wx-card .wc-hours span { font-size: 0.56rem; color: var(--muted); letter-spacing: -0.03em; }
+.wx-card .wc-temps span { font-size: 0.66rem; color: var(--ink); font-weight: 700; }
+.wx-card .wc-stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; margin-top: 18px; }
+.wx-card .wc-stat { display: flex; align-items: center; gap: 10px; min-width: 0; padding: 11px 13px;
+  border-radius: 14px; border: 1px solid var(--glass-border); background: transparent; }
+.wx-card .wc-st-ic { flex: 0 0 auto; display: flex; align-items: center; justify-content: center; color: var(--indigo); }
+.wx-card .wc-st-txt { display: flex; flex-direction: column; line-height: 1.15; min-width: 0; }
+.wx-card .wc-st-txt span { font-size: 0.68rem; color: var(--muted); }
+.wx-card .wc-st-txt strong { font-size: 1.02rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.wx-card .wc-st-txt em { font-size: 0.66rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- Home Engine ---------------------------------------------------------- */
 .he-card .he-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }

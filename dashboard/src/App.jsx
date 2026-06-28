@@ -257,7 +257,7 @@ function WeatherCard({ weather }) {
     { icon: mdiWaterOutline, label: 'Umidità est.', value: weather?.humidity != null ? `${Math.round(weather.humidity)}%` : '—', sub: humLabel(weather?.humidity) },
   ]
   return (
-    <div className="card weather-card">
+    <div className="card wx-card">
       <div className="wc-head">
         <h3>Meteo esterno</h3>
         {weather?.location && <span className="wc-loc">{weather.location}</span>}
@@ -700,12 +700,10 @@ function HomeOverview({ rooms, lights, status, weather, now, onSelectRoom, logs,
       {/* Riga 1 — stat card */}
       <StatRow rooms={rooms} status={status} now={now} energy={energy} />
 
-      {/* Riga 2 — Meteo esterno */}
-      <WeatherCard weather={weather} />
-
-      {/* Riga 3 — Stato della casa | Home Engine */}
-      <div className="home2-row r2">
+      {/* Riga 2 — Stato della casa | Meteo | Home Engine */}
+      <div className="home2-row r3">
         <HomeStateCard rooms={rooms} lights={lights} status={status} overview={overview} />
+        <WeatherCard weather={weather} />
         <HomeEngineCard overview={overview} />
       </div>
 
