@@ -8,7 +8,7 @@ import {
   mdiBrightness5, mdiGauge, mdiWifi, mdiAccessPoint, mdiCloudCheckOutline,
   mdiAlertCircleOutline, mdiClockOutline, mdiWeatherPartlyCloudy,
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
-  mdiWaterBoiler, mdiRadiator, mdiAirConditioner,
+  mdiWaterBoiler, mdiRadiator, mdiAirConditioner, mdiAccountGroup, mdiShieldCheck,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -244,6 +244,36 @@ function WeatherCard({ weather, status }) {
   )
 }
 
+function StatRow({ rooms, status, now, energy }) {
+  const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
+  const sensorRooms = rooms.filter((r) => r.has_sensor).length
+  const sensorsOk = rooms.filter((r) => r.has_sensor && sensorFresh(r.last_reading, now)).length
+  const nominal = status.panasonic && status.dirigera && sensorsOk === sensorRooms
+  const people = Array.isArray(status.presence_people) ? status.presence_people.length : 0
+  const tempRooms = rooms.filter((r) => r.temperature != null)
+  const avgTemp = tempRooms.length ? tempRooms.reduce((s, r) => s + r.temperature, 0) / tempRooms.length : null
+  const cards = [
+    { tint: 'blue', icon: mdiAccountGroup, label: 'Presenza', value: `${people} ${people === 1 ? 'persona' : 'persone'}`, sub: status.presence_home ? 'In casa' : 'Fuori' },
+    { tint: 'blue', icon: mdiSnowflake, label: 'Clima', value: `${activeAcs}/${rooms.length} attivi`, sub: avgTemp != null ? `${avgTemp.toFixed(1)}° media` : '—' },
+    { tint: 'amber', icon: mdiLightningBolt, label: 'Energia clima oggi', value: `${(energy?.today_kwh || 0).toFixed(2)} kWh`, sub: energy?.today_cost != null ? `Costo stimato: ${energy.today_cost.toFixed(2)} €` : '' },
+    { tint: nominal ? 'green' : 'amber', icon: nominal ? mdiShieldCheck : mdiAlertCircleOutline, label: 'Stato sistema', value: nominal ? 'Tutto OK' : 'Attenzione', sub: nominal ? 'Nessun allarme' : 'Verifica impianti' },
+  ]
+  return (
+    <div className="stat-row">
+      {cards.map((c) => (
+        <div key={c.label} className="card stat-card">
+          <span className={`sc-ic ${c.tint}`}><Icon path={c.icon} size={1} /></span>
+          <div className="sc-body">
+            <span className="sc-label">{c.label}</span>
+            <strong className="sc-value">{c.value}</strong>
+            <span className="sc-sub">{c.sub}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  )
+}
+
 function HudStrip({ rooms, lights, status, lastRefresh, now }) {
   const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
   const sensorRooms = rooms.filter((r) => r.has_sensor).length
@@ -434,7 +464,7 @@ function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSele
 
   return (
     <div className="home-grid">
-      <HudStrip rooms={rooms} lights={lights} status={status} lastRefresh={lastRefresh} now={now} />
+      <StatRow rooms={rooms} status={status} now={now} energy={energy} />
 
       <div className="card home-hero">
         <div className="home-hero-head">

@@ -4033,3 +4033,37 @@ body { background:
 }
 .ec-bar.today span { color: #c4631e; font-weight: 700; }
 .energy-empty { color: var(--muted); font-size: 0.82rem; margin: auto; }
+
+/* ===========================================================================
+   RESTYLE HOME — Tappa 1: stat card in alto (Presenza/Clima/Energia/Stato)
+   =========================================================================== */
+.stat-row {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+}
+.stat-card { display: flex; align-items: center; gap: 14px; padding: 18px 20px; }
+.sc-ic {
+  width: 48px; height: 48px; border-radius: 14px; flex: 0 0 auto;
+  display: flex; align-items: center; justify-content: center;
+}
+.sc-ic.blue  { background: rgba(91, 141, 239, 0.14); color: #5b8def; }
+.sc-ic.amber { background: rgba(240, 168, 104, 0.18); color: #e8893f; }
+.sc-ic.green { background: rgba(47, 158, 143, 0.16); color: #2f9e8f; }
+.sc-body { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.sc-label { font-size: 0.8rem; color: var(--muted); font-weight: 600; }
+.sc-value {
+  font-size: 1.32rem; font-weight: 800; color: var(--ink); line-height: 1.15;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.sc-sub {
+  font-size: 0.76rem; color: var(--muted);
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+@media (max-width: 640px) {
+  .stat-row { grid-template-columns: 1fr 1fr !important; gap: 10px; }
+  .stat-card { padding: 13px 14px; gap: 10px; }
+  .sc-ic { width: 40px; height: 40px; border-radius: 11px; }
+  .sc-value { font-size: 1.12rem; }
+}
