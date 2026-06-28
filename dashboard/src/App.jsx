@@ -84,6 +84,12 @@ const formatTime = (date) => date
   ? `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
   : '--:--'
 
+// Saluto in base all'ora (al posto del ridondante "Casa abitata/vuota").
+const greeting = (date = new Date()) => {
+  const h = date.getHours()
+  return h < 6 ? 'Buonanotte' : h < 12 ? 'Buongiorno' : h < 18 ? 'Buon pomeriggio' : 'Buonasera'
+}
+
 // "iPhone Mario" -> "Mario": mostra solo il nome della persona, non il device.
 const personName = (device) =>
   (device || '').replace(/^(iPhone|iPad|iPod|Galaxy|Pixel|Telefono|Smartphone)\s+/i, '').trim()
@@ -439,7 +445,7 @@ function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSele
       <div className="card home-hero">
         <div className="home-hero-main">
           <p className="home-kicker">Casa</p>
-          <h2>{status.presence_home ? 'Casa abitata' : 'Casa vuota'}</h2>
+          <h2>{greeting(now)}</h2>
           <span className="home-hero-summary">Refresh {lastRefresh ? relTime(lastRefresh, now) : 'in corso'} · {rooms.length} stanze</span>
         </div>
         <div className="home-hero-insights">
