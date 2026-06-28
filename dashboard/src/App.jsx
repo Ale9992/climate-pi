@@ -8,7 +8,7 @@ import {
   mdiBrightness5, mdiGauge, mdiWifi, mdiAccessPoint, mdiCloudCheckOutline,
   mdiAlertCircleOutline, mdiClockOutline, mdiWeatherPartlyCloudy,
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
-  mdiWaterBoiler, mdiRadiator,
+  mdiWaterBoiler, mdiRadiator, mdiAirConditioner,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -412,7 +412,7 @@ function BoilerCard({ boiler, onToggle }) {
   )
 }
 
-function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config, energy }) {
+function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config, energy, boiler }) {
   const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
   const totalEnergy = rooms.reduce((s, r) => s + (r.ac?.reachable ? (r.ac.energy_today_kwh || 0) : 0), 0)
   const sensorsOk = rooms.filter((r) => r.has_sensor && sensorFresh(r.last_reading, now)).length
@@ -478,7 +478,10 @@ function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSele
         <h3>Stato impianto</h3>
         <div className="system-list">
           <div className="ok"><Icon path={mdiCloudCheckOutline} size={0.68} /><span>Home Engine</span><strong>online</strong></div>
-          <div className={status.panasonic ? 'ok' : 'warn'}><Icon path={mdiAccessPoint} size={0.68} /><span>Panasonic</span><strong>{status.panasonic ? 'ok' : 'errore'}</strong></div>
+          <div className={status.panasonic ? 'ok' : 'warn'}><Icon path={mdiAirConditioner} size={0.68} /><span>Clima</span><strong>{status.panasonic ? 'ok' : 'errore'}</strong></div>
+          {boiler?.enabled && (
+            <div className={boiler.on != null ? 'ok' : 'warn'}><Icon path={mdiRadiator} size={0.68} /><span>Caldaia</span><strong>{boiler.on != null ? (boiler.on ? 'accesa' : 'spenta') : '—'}</strong></div>
+          )}
           <div className={status.dirigera ? 'ok' : 'warn'}><Icon path={mdiLightbulbVariant} size={0.68} /><span>Dirigera</span><strong>{status.dirigera ? 'ok' : 'errore'}</strong></div>
           <div className={sensorsOk === sensorRooms ? 'ok' : 'warn'}><Icon path={mdiHomeThermometerOutline} size={0.68} /><span>Sensori</span><strong>{sensorsOk}/{sensorRooms}</strong></div>
         </div>
@@ -677,6 +680,7 @@ export default function App() {
             logs={logs}
             config={config}
             energy={energy}
+            boiler={boiler}
             onSelectRoom={(room) => { setActiveRoom(room); setSection('room') }}
           />
         )}
