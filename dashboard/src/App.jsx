@@ -9,6 +9,8 @@ import {
   mdiAlertCircleOutline, mdiClockOutline, mdiWeatherPartlyCloudy,
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
   mdiWaterBoiler, mdiRadiator, mdiAirConditioner, mdiAccountGroup, mdiShieldCheck,
+  mdiBrain, mdiCheckCircle, mdiWeatherWindy, mdiWhiteBalanceSunny, mdiUmbrellaOutline,
+  mdiChevronRight,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -205,40 +207,83 @@ function SystemCard({ status, lastRefresh, activeRoom, now }) {
   )
 }
 
-function WeatherCard({ weather, status }) {
-  const forecast = weather?.forecast || []
-  const temps = forecast.map((p) => p.temperature).filter((v) => v != null)
-  const min = temps.length ? Math.min(...temps) : null
-  const max = temps.length ? Math.max(...temps) : null
-  const span = min != null && max != null ? Math.max(1, max - min) : 1
-  const next = forecast.slice(0, 8)
+function ComfortGauge({ value }) {
+  const v = value == null ? 0 : value
+  const r = 52
+  const c = 2 * Math.PI * r
+  const off = c * (1 - v / 100)
+  const tone = v >= 80 ? 'good' : v >= 60 ? 'mid' : 'bad'
+  const label = value == null ? 'Nessun dato' : v >= 80 ? 'Comfort ottimo' : v >= 60 ? 'Comfort buono' : 'Comfort basso'
+  return (
+    <div className={`comfort-gauge ${tone}`}>
+      <svg viewBox="0 0 120 120">
+        <circle className="cg-track" cx="60" cy="60" r={r} />
+        <circle className="cg-fill" cx="60" cy="60" r={r}
+          strokeDasharray={c} strokeDashoffset={off} transform="rotate(-90 60 60)" />
+      </svg>
+      <div className="cg-center">
+        <strong>{value == null ? '—' : `${v}%`}</strong>
+        <span>{label}</span>
+      </div>
+    </div>
+  )
+}
 
+function Sparkline({ points }) {
+  const W = 240, H = 48
+  const vals = points.filter((v) => v != null)
+  if (vals.length < 2) return null
+  const min = Math.min(...vals), max = Math.max(...vals), span = Math.max(0.5, max - min)
+  const step = W / (points.length - 1)
+  const coords = points.map((v, i) => [i * step, v == null ? H / 2 : H - 6 - ((v - min) / span) * (H - 16)])
+  const d = coords.map((p, i) => `${i ? 'L' : 'M'}${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')
+  return (
+    <svg className="spark" viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
+      <path className="spark-line" d={d} />
+      {coords.map((p, i) => <circle key={i} className="spark-dot" cx={p[0]} cy={p[1]} r="2.4" />)}
+    </svg>
+  )
+}
+
+function WeatherCard({ weather }) {
+  const forecast = (weather?.forecast || []).slice(0, 7)
+  const uvLabel = (u) => u == null ? '—' : u < 3 ? 'Basso' : u < 6 ? 'Moderato' : u < 8 ? 'Alto' : u < 11 ? 'Molto alto' : 'Estremo'
+  const windLabel = (w) => w == null ? '—' : w < 12 ? 'Leggero' : w < 20 ? 'Moderato' : w < 39 ? 'Forte' : 'Burrasca'
+  const humLabel = (h) => h == null ? '—' : h < 40 ? 'Bassa' : h <= 65 ? 'Buona' : 'Alta'
+  const stats = [
+    { icon: mdiWhiteBalanceSunny, label: 'UV', value: weather?.uv_index != null ? `${weather.uv_index}` : '—', sub: uvLabel(weather?.uv_index) },
+    { icon: mdiUmbrellaOutline, label: 'Pioggia', value: weather?.precipitation_probability != null ? `${weather.precipitation_probability}%` : '—', sub: 'Probabilità' },
+    { icon: mdiWeatherWindy, label: 'Vento', value: weather?.wind_speed != null ? `${weather.wind_speed} km/h` : '—', sub: windLabel(weather?.wind_speed) },
+    { icon: mdiWaterPercent, label: 'Umidità est.', value: weather?.humidity != null ? `${Math.round(weather.humidity)}%` : '—', sub: humLabel(weather?.humidity) },
+  ]
   return (
     <div className="card weather-card">
-      <div className="weather-main">
-        <span className="weather-icon"><Icon path={mdiWeatherPartlyCloudy} size={1.4} /></span>
-        <div>
-          <h3>Meteo esterno</h3>
+      <div className="wc-head">
+        <h3>Meteo esterno</h3>
+        {weather?.location && <span className="wc-loc">{weather.location}</span>}
+      </div>
+      <div className="wc-now">
+        <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={1.7} /></span>
+        <div className="wc-temp">
           <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
-          <p>{weather?.humidity != null ? `Umidità ${Math.round(weather.humidity)}%` : 'Umidità non disponibile'}</p>
+          <span>{weather?.description || '—'}</span>
+          {weather?.apparent_temperature != null && <em>Percepita {Math.round(weather.apparent_temperature)}°</em>}
+        </div>
+        <div className="wc-chart">
+          <Sparkline points={forecast.map((p) => p.temperature)} />
+          <div className="wc-hours">
+            {forecast.map((p) => <span key={p.time}>{(p.time || '').slice(11, 13)}</span>)}
+          </div>
         </div>
       </div>
-      <div className="weather-meta">
-        <span>Media 24h casa</span>
-        <strong>{status.outdoor_avg_temperature != null ? `${status.outdoor_avg_temperature}°` : '—'}</strong>
-      </div>
-      <div className="weather-forecast">
-        {next.map((p) => {
-          const h = (p.time || '').slice(11, 13)
-          const pct = p.temperature != null ? ((p.temperature - min) / span) * 100 : 0
-          return (
-            <div key={p.time} className="wf-point">
-              <span>{h || '—'}</span>
-              <i style={{ height: `${28 + pct * 0.38}px` }} />
-              <strong>{p.temperature != null ? Math.round(p.temperature) : '—'}°</strong>
-            </div>
-          )
-        })}
+      <div className="wc-stats">
+        {stats.map((s) => (
+          <div key={s.label} className="wc-stat">
+            <span className="wc-st-label"><Icon path={s.icon} size={0.6} />{s.label}</span>
+            <strong>{s.value}</strong>
+            <em>{s.sub}</em>
+          </div>
+        ))}
       </div>
     </div>
   )
@@ -303,7 +348,8 @@ function HudStrip({ rooms, lights, status, lastRefresh, now }) {
   )
 }
 
-function AlertPanel({ rooms, status, now }) {
+function AlertPanel({ rooms, status, now, logs }) {
+  const last = (logs || [])[0]
   const alerts = []
   if (!status.panasonic) alerts.push({ tone: 'warn', title: 'Panasonic non risponde', text: 'Controllo clima degradato', icon: mdiAccessPoint })
   if (!status.dirigera) alerts.push({ tone: 'warn', title: 'Dirigera non risponde', text: 'Controllo luci degradato', icon: mdiLightbulbVariant })
@@ -327,23 +373,31 @@ function AlertPanel({ rooms, status, now }) {
   return (
     <div className={`card alerts-card ${alerts.length ? '' : 'clear'}`}>
       <div className="home-rooms-head">
-        <h3>Alert</h3>
+        <h3>Alert e notifiche</h3>
         <span>{alerts.length ? `${alerts.length} da verificare` : 'tutto regolare'}</span>
       </div>
       {alerts.length === 0 ? (
         <div className="all-clear">
-          <Icon path={mdiCloudCheckOutline} size={1.35} />
-          <strong>Sistemi nominali</strong>
-          <span>Nessuna anomalia attiva</span>
+          <Icon path={mdiCheckCircle} size={1.35} />
+          <strong>Nessuna anomalia</strong>
         </div>
       ) : (
         <div className="alert-list">
-          {alerts.slice(0, 4).map((a) => (
+          {alerts.slice(0, 3).map((a) => (
             <div key={`${a.title}-${a.text}`} className={a.tone}>
               <Icon path={a.icon} size={0.75} />
               <span><strong>{a.title}</strong><em>{a.text}</em></span>
             </div>
           ))}
+        </div>
+      )}
+      {last && (
+        <div className="alert-last">
+          <span className="al-label">Ultima automazione</span>
+          <div className="al-row">
+            <span><strong>{last.action_taken || last.rule_matched || 'evento'}</strong><em>{last.room_name}</em></span>
+            <b>{(last.timestamp || '').slice(11, 16)}</b>
+          </div>
         </div>
       )}
     </div>
@@ -395,7 +449,7 @@ function TimelineCard({ logs }) {
   return (
     <div className="card timeline-card">
       <div className="home-rooms-head">
-        <h3>Telemetry</h3>
+        <h3>Eventi recenti</h3>
         <span>ultimi eventi</span>
       </div>
       {items.length === 0 ? (
@@ -442,102 +496,205 @@ function BoilerCard({ boiler, onToggle }) {
   )
 }
 
-function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config, energy, boiler }) {
+function HomeStateCard({ rooms, lights, status, overview }) {
   const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
-  const totalEnergy = rooms.reduce((s, r) => s + (r.ac?.reachable ? (r.ac.energy_today_kwh || 0) : 0), 0)
-  const sensorsOk = rooms.filter((r) => r.has_sensor && sensorFresh(r.last_reading, now)).length
-  const sensorRooms = rooms.filter((r) => r.has_sensor).length
+  const tempRooms = rooms.filter((r) => r.temperature != null)
+  const avgTemp = tempRooms.length ? tempRooms.reduce((s, r) => s + r.temperature, 0) / tempRooms.length : null
+  const humRooms = rooms.filter((r) => r.humidity != null)
+  const avgHum = humRooms.length ? humRooms.reduce((s, r) => s + r.humidity, 0) / humRooms.length : null
   const allLights = Object.values(lights || {}).flat()
   const lightsOn = allLights.filter((l) => l.is_on).length
-  const tempRooms = rooms.filter((r) => r.temperature != null)
-  const humidityRooms = rooms.filter((r) => r.humidity != null)
-  const avgTemp = tempRooms.length ? tempRooms.reduce((s, r) => s + r.temperature, 0) / tempRooms.length : null
-  const avgHumidity = humidityRooms.length ? humidityRooms.reduce((s, r) => s + r.humidity, 0) / humidityRooms.length : null
-  const peopleHome = Array.isArray(status.presence_people) ? status.presence_people : []
-  const sm = calendarSeasonMeta(now)
-  const heroFacts = [
-    { label: 'Media interna', value: avgTemp != null ? `${avgTemp.toFixed(1)}°` : '—', icon: mdiThermometer },
-    { label: 'Umidità', value: avgHumidity != null ? `${Math.round(avgHumidity)}%` : '—', icon: mdiWaterPercent },
-    { label: 'AC attivi', value: `${activeAcs}/${rooms.length}`, icon: mdiPowerPlugOutline },
-    { label: 'Luci accese', value: `${lightsOn}/${allLights.length}`, icon: mdiLightbulbVariant },
+  const people = Array.isArray(status.presence_people) ? status.presence_people.length : 0
+  const list = [
+    { icon: mdiThermometer, label: 'Temperatura media', value: avgTemp != null ? `${avgTemp.toFixed(1)}°` : '—' },
+    { icon: mdiWaterPercent, label: 'Umidità media', value: avgHum != null ? `${Math.round(avgHum)}%` : '—' },
+    { icon: mdiAccountGroup, label: 'Persone presenti', value: people },
+    { icon: mdiSnowflake, label: 'Climatizzatori attivi', value: `${activeAcs}/${rooms.length}` },
+    { icon: mdiLightbulbVariant, label: 'Luci accese', value: `${lightsOn}/${allLights.length}` },
   ]
-
   return (
-    <div className="home-grid">
+    <div className="card hs-card">
+      <h3>Stato della casa</h3>
+      <div className="hs-body">
+        <ComfortGauge value={overview?.comfort_home} />
+        <div className="hs-list">
+          {list.map((r) => (
+            <div key={r.label}>
+              <Icon path={r.icon} size={0.78} />
+              <div><strong>{r.value}</strong><span>{r.label}</span></div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function HomeEngineCard({ overview }) {
+  const he = overview?.home_engine || {}
+  const stable = he.stable
+  return (
+    <div className="card he-card">
+      <div className="he-head">
+        <span className="he-ic"><Icon path={mdiBrain} size={0.95} /></span>
+        <h3>Home Engine</h3>
+      </div>
+      <div className="he-status">
+        <span className={`he-badge ${stable ? 'good' : 'warn'}`}>
+          <Icon path={stable ? mdiCheckCircle : mdiAlertCircleOutline} size={0.8} />
+          {stable ? 'Casa stabile' : 'Da verificare'}
+        </span>
+        {he.comfort != null && <span className="he-comfort">Comfort {he.comfort}%</span>}
+      </div>
+      <div className="he-grid">
+        <div><span>Consumo previsto oggi</span><strong>{he.projected_kwh_today != null ? `${he.projected_kwh_today} kWh` : '—'}</strong></div>
+        <div><span>Prossima decisione</span><strong>{he.next_decision || '—'}</strong></div>
+      </div>
+      <div className="he-suggest">
+        <span className="he-sg-label">Suggerimento</span>
+        <p>{he.suggestion || '—'}</p>
+      </div>
+    </div>
+  )
+}
+
+function EnergyClimateCard({ energy }) {
+  const today = energy?.today_kwh ?? 0
+  const delta = energy?.delta_pct
+  const days = (energy?.days || []).slice(-14)
+  const max = days.reduce((m, d) => Math.max(m, d.kwh || 0), 0) || 1
+  const n = new Date()
+  const todayStr = `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}`
+  const tiles = [
+    { label: 'Costo stimato', value: energy?.today_cost != null ? `${energy.today_cost.toFixed(2)}€` : '—' },
+    { label: 'Previsione giornata', value: energy?.projected_today_kwh != null ? `${energy.projected_today_kwh} kWh` : '—' },
+    { label: 'Media 7 giorni', value: energy?.avg7_kwh != null ? `${energy.avg7_kwh} kWh` : '—' },
+  ]
+  return (
+    <div className="card ecl-card">
+      <h3>Energia climatizzazione</h3>
+      <div className="ecl-big">
+        <strong>{today.toFixed(2)} kWh</strong>
+        {delta != null && <span className={`ecl-delta ${delta >= 0 ? 'up' : 'down'}`}>{delta >= 0 ? '+' : ''}{delta}% rispetto a ieri</span>}
+      </div>
+      <div className="ecl-spark">
+        {days.map((d) => {
+          const h = Math.max(6, ((d.kwh || 0) / max) * 100)
+          return <i key={d.day} className={d.day === todayStr ? 'today' : ''} style={{ height: `${h}%` }} title={`${d.day.slice(6)}: ${d.kwh} kWh`} />
+        })}
+      </div>
+      <div className="ecl-tiles">
+        {tiles.map((t) => <div key={t.label}><strong>{t.value}</strong><span>{t.label}</span></div>)}
+      </div>
+    </div>
+  )
+}
+
+function SystemsHealthCard({ overview, boiler }) {
+  const systems = [...(overview?.systems || [])]
+  const iconFor = {
+    home_engine: mdiBrain, panasonic: mdiAirConditioner, dirigera: mdiLightbulbVariant,
+    sensori: mdiHomeThermometerOutline, wifi: mdiWifi, caldaia: mdiRadiator,
+  }
+  // La caldaia (relè Sonoff in LAN) come impianto, se configurata.
+  if (boiler?.enabled) {
+    systems.splice(3, 0, {
+      key: 'caldaia', name: 'Caldaia', online: boiler.on != null,
+      detail: boiler.on != null ? (boiler.on ? 'accesa' : 'spenta') : 'non vista',
+    })
+  }
+  return (
+    <div className="card sh-card">
+      <h3>Stato impianti</h3>
+      <div className="sh-list">
+        {systems.length === 0 && <div className="sh-empty">Nessun dato</div>}
+        {systems.map((s) => (
+          <div key={s.key} className={s.online ? 'ok' : 'warn'}>
+            <Icon path={iconFor[s.key] || mdiAccessPoint} size={0.72} />
+            <span className="sh-name">{s.name}</span>
+            <span className="sh-status">{s.online ? 'Online' : 'Offline'}</span>
+            <em className="sh-detail">{s.detail}</em>
+          </div>
+        ))}
+      </div>
+    </div>
+  )
+}
+
+function RoomsStrip({ rooms, lights, boiler, onSelectRoom, now }) {
+  const norm = (s) => (s || '').trim()
+  const acByName = Object.fromEntries(rooms.map((r) => [norm(r.name), r]))
+  const boilerRoom = boiler?.enabled ? norm(boiler.room) : null
+  const names = [...new Set([
+    ...rooms.map((r) => norm(r.name)),
+    ...Object.keys(lights || {}).map(norm),
+    ...(boilerRoom ? [boilerRoom] : []),
+  ])]
+  return (
+    <div className="card rooms-strip-card">
+      <div className="home-rooms-head">
+        <h3>Stanze</h3>
+        <span>tocca per controllare</span>
+      </div>
+      <div className="rooms-strip">
+        {names.map((name) => {
+          const r = acByName[name] || {}
+          const lk = Object.keys(lights || {}).find((k) => norm(k) === name)
+          const roomLights = lk ? lights[lk] : []
+          const lightsOn = roomLights.filter((l) => l.is_on).length
+          const acOn = r.ac?.power === 'On'
+          const isBoiler = name === boilerRoom
+          return (
+            <button key={name} className="room-chip" onClick={() => onSelectRoom(name)}>
+              <div className="rc-head">
+                <strong>{name}</strong>
+                <Icon path={mdiChevronRight} size={0.7} />
+              </div>
+              <div className="rc-temp">{r.temperature != null ? `${r.temperature.toFixed(1)}°` : '—.-°'}</div>
+              <div className="rc-meta">
+                <span><Icon path={mdiWaterPercent} size={0.6} />{r.humidity != null ? `${Math.round(r.humidity)}%` : '—'}</span>
+              </div>
+              <div className="rc-badges">
+                {r.ac && <span className={`rc-badge ${acOn ? 'on' : ''}`}><Icon path={mdiSnowflake} size={0.55} />{acOn ? 'AC ON' : 'AC OFF'}</span>}
+                {roomLights.length > 0 && (
+                  <span className={`rc-badge ${lightsOn ? 'on amber' : ''}`}><Icon path={mdiLightbulbVariant} size={0.55} />{lightsOn ? 'Luce ON' : 'Luce OFF'}</span>
+                )}
+                {isBoiler && <span className={`rc-badge ${boiler?.on ? 'on red' : ''}`}><Icon path={mdiRadiator} size={0.55} />{boiler?.on ? 'Caldaia ON' : 'Caldaia OFF'}</span>}
+              </div>
+              <em className="rc-age">{r.last_reading ? `Agg. ${relTime(r.last_reading, now)}` : (isBoiler ? 'relè LAN' : 'solo luci')}</em>
+            </button>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+function HomeOverview({ rooms, lights, status, weather, now, onSelectRoom, logs, energy, boiler, overview }) {
+  return (
+    <div className="home2">
+      {/* Riga 1 — stat card */}
       <StatRow rooms={rooms} status={status} now={now} energy={energy} />
 
-      <div className="card home-hero">
-        <div className="home-hero-head">
-          <div className="home-hero-id">
-            <p className="home-kicker">Casa</p>
-            <div className={`presence-badges ${peopleHome.length ? '' : 'empty'}`}>
-              {peopleHome.length ? peopleHome.map((name) => (
-                <span key={name}>{personName(name)}</span>
-              )) : <span>Nessuno presente</span>}
-            </div>
-          </div>
-          <span className="home-hero-icon">
-            <Icon path={status.presence_home ? mdiHomeAccount : mdiHomeExportOutline} size={1.5} />
-          </span>
-        </div>
-        <div className="hero-facts">
-          {heroFacts.map((fact) => (
-            <div key={fact.label} className="hero-insight">
-              <Icon path={fact.icon} size={0.72} />
-              <span>{fact.label}</span>
-              <strong>{fact.value}</strong>
-            </div>
-          ))}
-        </div>
-        <span className="home-hero-summary">Refresh {lastRefresh ? relTime(lastRefresh, now) : 'in corso'} · {rooms.length} stanze</span>
+      {/* Riga 2 — Stato della casa | Meteo | Home Engine */}
+      <div className="home2-row r3">
+        <HomeStateCard rooms={rooms} lights={lights} status={status} overview={overview} />
+        <WeatherCard weather={weather} />
+        <HomeEngineCard overview={overview} />
       </div>
 
-      <WeatherCard weather={weather} status={status} />
-      <AlertPanel rooms={rooms} status={status} now={now} />
-
-      <div className="card home-status-card">
-        <h3>Clima e consumi</h3>
-        <div className="home-stat-list">
-          <div><Icon path={sm.icon} size={0.8} /><span>Stagione</span><strong>{sm.label}</strong></div>
-          <div><Icon path={mdiPowerPlugOutline} size={0.8} /><span>AC attivi</span><strong>{activeAcs}/{rooms.length}</strong></div>
-          <div><Icon path={mdiLightningBolt} size={0.8} /><span>Energia oggi</span><strong>{totalEnergy.toFixed(2)} kWh</strong></div>
-          <div><Icon path={mdiLightbulbVariant} size={0.8} /><span>Luci accese</span><strong>{lightsOn}/{allLights.length}</strong></div>
-        </div>
+      {/* Riga 3 — Energia | Impianti | Alert | Eventi */}
+      <div className="home2-row r4">
+        <EnergyClimateCard energy={energy} />
+        <SystemsHealthCard overview={overview} boiler={boiler} />
+        <AlertPanel rooms={rooms} status={status} now={now} logs={logs} />
+        <TimelineCard logs={logs} />
       </div>
 
-      <div className="card home-system-card">
-        <h3>Stato impianto</h3>
-        <div className="system-list">
-          <div className="ok"><Icon path={mdiCloudCheckOutline} size={0.68} /><span>Home Engine</span><strong>online</strong></div>
-          <div className={status.panasonic ? 'ok' : 'warn'}><Icon path={mdiAirConditioner} size={0.68} /><span>Clima</span><strong>{status.panasonic ? 'ok' : 'errore'}</strong></div>
-          {boiler?.enabled && (
-            <div className={boiler.on != null ? 'ok' : 'warn'}><Icon path={mdiRadiator} size={0.68} /><span>Caldaia</span><strong>{boiler.on != null ? (boiler.on ? 'accesa' : 'spenta') : '—'}</strong></div>
-          )}
-          <div className={status.dirigera ? 'ok' : 'warn'}><Icon path={mdiLightbulbVariant} size={0.68} /><span>Dirigera</span><strong>{status.dirigera ? 'ok' : 'errore'}</strong></div>
-          <div className={sensorsOk === sensorRooms ? 'ok' : 'warn'}><Icon path={mdiHomeThermometerOutline} size={0.68} /><span>Sensori</span><strong>{sensorsOk}/{sensorRooms}</strong></div>
-        </div>
-      </div>
-
-      <EnergyOpsCard energy={energy} />
-      <TimelineCard logs={logs} />
-
-      <div className="card home-rooms-card">
-        <div className="home-rooms-head">
-          <h3>Stanze</h3>
-          <span>tocca per controllare</span>
-        </div>
-        <div className="home-room-list">
-          {rooms.map((r) => (
-            <button key={r.name} onClick={() => onSelectRoom(r.name)}>
-              <span>
-                <strong>{r.name}</strong>
-                <em>{r.last_reading ? relTime(r.last_reading, now) : 'nessun sensore'}</em>
-              </span>
-              <b>{r.temperature != null ? `${r.temperature.toFixed(1)}°` : '—'}</b>
-              <i className={r.ac?.power === 'On' ? 'on' : ''}>{r.ac?.power === 'On' ? 'AC on' : 'AC off'}</i>
-            </button>
-          ))}
-        </div>
+      {/* Riga 4 — Consumo impianto (totale reale) | Stanze */}
+      <div className="home2-row r2">
+        <EnergyOpsCard energy={energy} />
+        <RoomsStrip rooms={rooms} lights={lights} boiler={boiler} onSelectRoom={onSelectRoom} now={now} />
       </div>
     </div>
   )
@@ -554,6 +711,7 @@ export default function App() {
   const [weather, setWeather] = useState({})
   const [boiler, setBoiler] = useState({})
   const [energy, setEnergy] = useState({})
+  const [overview, setOverview] = useState({})
   const [now, setNow] = useState(new Date())
   const [themeMode, setThemeMode] = useState('auto')
   const [autoTheme, setAutoTheme] = useState(() => autoThemeFor(new Date()))
@@ -571,12 +729,12 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [r, s, l, w, b, e] = await Promise.all([
+      const [r, s, l, w, b, e, o] = await Promise.all([
         api.getRooms(), api.getStatus(), api.getLights(),
         api.getWeather().catch(() => ({})), api.getBoiler().catch(() => ({})),
-        api.getEnergyMonth().catch(() => ({})),
+        api.getEnergyMonth().catch(() => ({})), api.getOverview().catch(() => ({})),
       ])
-      setRooms(r); setStatus(s); setLights(l); setWeather(w); setBoiler(b); setEnergy(e)
+      setRooms(r); setStatus(s); setLights(l); setWeather(w); setBoiler(b); setEnergy(e); setOverview(o)
       setLastRefresh(new Date()); setError(null)
     } catch (e) { setError(e.message) }
   }, [])
@@ -712,6 +870,7 @@ export default function App() {
             config={config}
             energy={energy}
             boiler={boiler}
+            overview={overview}
             onSelectRoom={(room) => { setActiveRoom(room); setSection('room') }}
           />
         )}

@@ -23,6 +23,7 @@ export const api = {
   getLogs: (limit = 100) => req(`/logs?limit=${limit}`),
   getWeather: () => req('/weather'),
   getEnergyMonth: () => req('/energy/month'),
+  getOverview: () => req('/overview'),
   getHistory: (room, hours = 24) =>
     req(`/rooms/${encodeURIComponent(room)}/history?hours=${hours}`),
 
