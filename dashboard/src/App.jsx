@@ -320,39 +320,40 @@ function AlertPanel({ rooms, status, now }) {
   )
 }
 
-function EnergyOpsCard({ rooms, config }) {
-  const acRooms = rooms.filter((r) => r.ac?.reachable)
-  const total = acRooms.reduce((s, r) => s + (r.ac?.energy_today_kwh || 0), 0)
-  const cooling = acRooms.reduce((s, r) => s + (r.ac?.energy_cooling_kwh || 0), 0)
-  const heating = acRooms.reduce((s, r) => s + (r.ac?.energy_heating_kwh || 0), 0)
-  const tariff = config?.tariff
-  const price = tariff ? tariff.variable_eur_kwh * (1 + tariff.vat_rate) : null
-  const cost = price != null ? total * price : null
-  const sorted = [...acRooms].sort((a, b) => (b.ac?.energy_today_kwh || 0) - (a.ac?.energy_today_kwh || 0))
+const MESI_COMPACT = ['gen', 'feb', 'mar', 'apr', 'mag', 'giu', 'lug', 'ago', 'set', 'ott', 'nov', 'dic']
+
+function EnergyOpsCard({ energy }) {
+  // Consumo Panasonic = UNICO d'impianto (non per-AC). Grafico giornaliero del mese.
+  const days = energy?.days || []
+  const max = days.reduce((m, d) => Math.max(m, d.kwh || 0), 0) || 1
+  const monthName = days.length ? MESI_COMPACT[parseInt(days[0].day.slice(4, 6), 10) - 1] : ''
+  const n = new Date()
+  const todayStr = `${n.getFullYear()}${String(n.getMonth() + 1).padStart(2, '0')}${String(n.getDate()).padStart(2, '0')}`
 
   return (
     <div className="card energy-ops-card">
       <div className="home-rooms-head">
-        <h3>Reactor Load</h3>
-        <span>{cost != null ? `~${cost.toFixed(2)} EUR oggi` : 'costo non disponibile'}</span>
+        <h3>Consumo impianto</h3>
+        <span>{monthName ? `${monthName} ${n.getFullYear()}` : ''}</span>
       </div>
-      <div className="energy-bars">
-        {sorted.map((r) => {
-          const kwh = r.ac?.energy_today_kwh || 0
-          const pct = total > 0 ? Math.max(4, (kwh / total) * 100) : 0
+      <div className="energy-totals">
+        <div><strong>{(energy?.today_kwh || 0).toFixed(2)}</strong><em>kWh oggi</em></div>
+        <div><strong>{(energy?.month_kwh || 0).toFixed(1)}</strong><em>kWh nel mese</em></div>
+        <div><strong>{energy?.month_cost != null ? `${energy.month_cost.toFixed(2)}€` : '—'}</strong><em>costo mese</em></div>
+      </div>
+      <div className="energy-chart">
+        {days.length === 0 && <div className="energy-empty">Nessun dato</div>}
+        {days.map((d) => {
+          const h = Math.max(4, ((d.kwh || 0) / max) * 100)
+          const dd = d.day.slice(6)
           return (
-            <div key={r.name} className="energy-row">
-              <span>{r.name}</span>
-              <i><b style={{ width: `${pct}%` }} /></i>
-              <strong>{kwh.toFixed(2)} kWh</strong>
+            <div key={d.day} className={`ec-bar ${d.day === todayStr ? 'today' : ''}`}
+              title={`${dd}/${d.day.slice(4, 6)}: ${d.kwh} kWh${d.cost != null ? ` · ${d.cost.toFixed(2)}€` : ''}`}>
+              <i style={{ height: `${h}%` }} />
+              <span>{dd}</span>
             </div>
           )
         })}
-      </div>
-      <div className="energy-splitline">
-        <span>Cool {cooling.toFixed(2)} kWh</span>
-        <span>Heat {heating.toFixed(2)} kWh</span>
-        <strong>{total.toFixed(2)} kWh</strong>
       </div>
     </div>
   )
@@ -411,7 +412,7 @@ function BoilerCard({ boiler, onToggle }) {
   )
 }
 
-function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config }) {
+function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSelectRoom, logs, config, energy }) {
   const activeAcs = rooms.filter((r) => r.ac?.reachable && r.ac.power === 'On').length
   const totalEnergy = rooms.reduce((s, r) => s + (r.ac?.reachable ? (r.ac.energy_today_kwh || 0) : 0), 0)
   const sensorsOk = rooms.filter((r) => r.has_sensor && sensorFresh(r.last_reading, now)).length
@@ -483,7 +484,7 @@ function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSele
         </div>
       </div>
 
-      <EnergyOpsCard rooms={rooms} config={config} />
+      <EnergyOpsCard energy={energy} />
       <TimelineCard logs={logs} />
 
       <div className="card home-rooms-card">
@@ -518,6 +519,7 @@ export default function App() {
   const [activeRoom, setActiveRoom] = useState(null)
   const [weather, setWeather] = useState({})
   const [boiler, setBoiler] = useState({})
+  const [energy, setEnergy] = useState({})
   const [now, setNow] = useState(new Date())
   const [themeMode, setThemeMode] = useState('auto')
   const [autoTheme, setAutoTheme] = useState(() => autoThemeFor(new Date()))
@@ -535,11 +537,12 @@ export default function App() {
 
   const refresh = useCallback(async () => {
     try {
-      const [r, s, l, w, b] = await Promise.all([
+      const [r, s, l, w, b, e] = await Promise.all([
         api.getRooms(), api.getStatus(), api.getLights(),
         api.getWeather().catch(() => ({})), api.getBoiler().catch(() => ({})),
+        api.getEnergyMonth().catch(() => ({})),
       ])
-      setRooms(r); setStatus(s); setLights(l); setWeather(w); setBoiler(b)
+      setRooms(r); setStatus(s); setLights(l); setWeather(w); setBoiler(b); setEnergy(e)
       setLastRefresh(new Date()); setError(null)
     } catch (e) { setError(e.message) }
   }, [])
@@ -673,6 +676,7 @@ export default function App() {
             now={now}
             logs={logs}
             config={config}
+            energy={energy}
             onSelectRoom={(room) => { setActiveRoom(room); setSection('room') }}
           />
         )}

@@ -403,6 +403,21 @@ class ACController:
         recent = values[-hours:] if len(values) > hours else values
         return sum(recent) / len(recent)
 
+    async def fetch_day_history(self, device_id: str, date: str) -> list:
+        """Storico ORARIO di un giorno (date 'YYYYMMDD') dal Comfort Cloud.
+        Ritorna la historyDataList (record orari) o [] se non disponibile."""
+        info = self._infos.get(device_id)
+        if info is None or self._client is None:
+            return []
+        try:
+            resp = await self._with_retry(
+                f"day_history({date})",
+                lambda: self._client.history(info.id, "Day", date))
+            return (resp or {}).get("parameters", {}).get("historyDataList", []) or []
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Storico Panasonic %s non disponibile: %s", date, exc)
+            return []
+
     # -- consumo energetico (per dashboard e ottimizzazione) ----------------
     async def get_today_energy(self, device_id: str) -> Optional[dict[str, Any]]:
         """

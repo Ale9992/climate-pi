@@ -34,6 +34,7 @@ from api import routes
 from core.ac_controller import ACController
 from core.boiler import BoilerController
 from core.config import load_config
+from core.energy_history import EnergyHistoryLogger
 from core.light_controller import LightController
 from core.mpc_advisor import MpcAdvisor
 from core.mpc_logger import MpcLogger
@@ -187,6 +188,9 @@ async def run() -> None:
     mpc_logger = MpcLogger(cfg, ac, db, presence_manager=presence_manager,
                            weather_provider=weather)
 
+    # --- Logger storico energia: tiene fresca panasonic_history (grafico consumi). ---
+    energy_history = EnergyHistoryLogger(ac, db)
+
     # --- Reader SwitchBot (BLE): dà a una stanza senza sensore IKEA (Camera da
     #     letto) T/umidita' indoor reali, scritte in sensor_readings come un
     #     sensore qualsiasi. Solo scrittura, lettura BLE passiva. ---
@@ -228,6 +232,7 @@ async def run() -> None:
     await poller.start()
     scheduler.start()
     await mpc_logger.start()
+    await energy_history.start()
     await switchbot_reader.start()
     await remote_sensor_reader.start()
     await mpc_advisor.start()
@@ -301,6 +306,7 @@ async def run() -> None:
         await _safe(mpc_advisor.stop(), "mpc_advisor")
         await _safe(remote_sensor_reader.stop(), "remote_sensor_reader")
         await _safe(switchbot_reader.stop(), "switchbot_reader")
+        await _safe(energy_history.stop(), "energy_history")
         await _safe(mpc_logger.stop(), "mpc_logger")
         await _safe(poller.stop(), "sensor_poller")
         await _safe(season_manager.stop(), "season_manager")

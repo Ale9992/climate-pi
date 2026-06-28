@@ -420,3 +420,36 @@ class Database:
             d["success"] = bool(d["success"])
             result.append(d)
         return result
+
+    # -- storico energia Panasonic (panasonic_history) ----------------------
+    async def get_month_energy(self) -> dict[str, Any]:
+        """Energia GIORNALIERA del mese corrente. Il consumo Panasonic e' UNICO
+        d'impianto (replicato sui 3 device): per ogni ora prendo il MAX tra i
+        device, poi sommo per giorno. Ritorna {days:[{day,kwh}], today_kwh, month_kwh}."""
+        month = datetime.now().strftime("%Y%m")
+        today = datetime.now().strftime("%Y%m%d")
+        cursor = await self._db.execute(
+            "SELECT substr(data_time,1,8) AS day, SUM(h) AS kwh FROM ("
+            " SELECT data_time, MAX(consumption) AS h FROM panasonic_history "
+            " WHERE substr(data_time,1,6)=? AND consumption IS NOT NULL "
+            " GROUP BY data_time) GROUP BY day ORDER BY day",
+            (month,),
+        )
+        rows = await cursor.fetchall()
+        days = [{"day": r["day"], "kwh": round(float(r["kwh"] or 0), 2)} for r in rows]
+        today_kwh = next((d["kwh"] for d in days if d["day"] == today), 0.0)
+        month_kwh = round(sum(d["kwh"] for d in days), 2)
+        return {"days": days, "today_kwh": today_kwh, "month_kwh": month_kwh}
+
+    async def upsert_panasonic_history(self, rows: list[tuple]) -> int:
+        """Inserisce/aggiorna lo storico orario Panasonic (PK device_id+data_time;
+        oggi cambia durante il giorno -> REPLACE per aggiornarlo)."""
+        if not rows:
+            return 0
+        cur = await self._db.executemany(
+            "INSERT OR REPLACE INTO panasonic_history "
+            "(device_id, data_time, timestamp, setting_temp, inside_temp, "
+            " outside_temp, consumption, cost, cool_rate, heat_rate) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)", rows)
+        await self._db.commit()
+        return cur.rowcount

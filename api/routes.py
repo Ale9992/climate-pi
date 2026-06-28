@@ -454,3 +454,21 @@ async def get_weather() -> WeatherState:
         humidity=round(hum, 0) if hum is not None else None,
         forecast=forecast,
     )
+
+
+@router.get("/energy/month")
+async def get_energy_month() -> dict:
+    """Consumo GIORNALIERO del mese corrente (totale d'IMPIANTO, non per-AC: il
+    consumo Panasonic e' unico) + costo reale dalla tariffa di config."""
+    db = _require(ctx.database, "database")
+    data = await db.get_month_energy()
+    cfg = ctx.config
+    rate = 0.0
+    if cfg and getattr(cfg, "tariff", None):
+        rate = round(cfg.tariff.variable_eur_kwh * (1 + cfg.tariff.vat_rate), 4)
+    for d in data["days"]:
+        d["cost"] = round(d["kwh"] * rate, 2)
+    data["today_cost"] = round(data["today_kwh"] * rate, 2)
+    data["month_cost"] = round(data["month_kwh"] * rate, 2)
+    data["rate"] = rate
+    return data

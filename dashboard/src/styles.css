@@ -3993,3 +3993,38 @@ body { background:
 .boiler-toggle:active { transform: scale(0.97); }
 .boiler-toggle:disabled { opacity: 0.5; cursor: default; }
 .boiler-note { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+/* ===========================================================================
+   CONSUMO IMPIANTO — totali (1 valore, non per-AC) + grafico giornaliero mese
+   =========================================================================== */
+.energy-totals {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin: 6px 0 12px;
+}
+.energy-totals > div {
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 6px; border-radius: 14px; background: rgba(255, 255, 255, 0.35);
+}
+.energy-totals strong { font-size: 1.12rem; font-weight: 800; color: var(--ink); }
+.energy-totals em {
+  font-size: 0.64rem; color: var(--muted); font-style: normal; font-weight: 600;
+  text-align: center;
+}
+.energy-chart {
+  display: flex; align-items: flex-end; gap: 3px; height: 92px;
+  overflow-x: auto; padding-bottom: 2px;
+}
+.ec-bar {
+  flex: 1 1 0; min-width: 8px; display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-end; height: 100%; gap: 4px;
+}
+.ec-bar i {
+  width: 72%; max-width: 14px; min-height: 3px; border-radius: 4px;
+  background: linear-gradient(180deg, #8fb0ff, #5b8def); transition: height .3s;
+}
+.ec-bar.today i { background: linear-gradient(180deg, #ffc98f, #f0a868); }
+.ec-bar span {
+  font-size: 0.55rem; color: var(--muted); font-variant-numeric: tabular-nums;
+}
+.ec-bar.today span { color: #c4631e; font-weight: 700; }
+.energy-empty { color: var(--muted); font-size: 0.82rem; margin: auto; }
