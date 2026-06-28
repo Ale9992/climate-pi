@@ -251,7 +251,7 @@ function WeatherCard({ weather }) {
   const windLabel = (w) => w == null ? '—' : w < 12 ? 'Leggero' : w < 20 ? 'Moderato' : w < 39 ? 'Forte' : 'Burrasca'
   const humLabel = (h) => h == null ? '—' : h < 40 ? 'Bassa' : h <= 65 ? 'Buona' : 'Alta'
   const stats = [
-    { icon: mdiWaterOutline, label: 'UV', value: weather?.uv_index != null ? `${weather.uv_index}` : '—', sub: uvLabel(weather?.uv_index) },
+    { icon: mdiWhiteBalanceSunny, label: 'UV', value: weather?.uv_index != null ? `${weather.uv_index}` : '—', sub: uvLabel(weather?.uv_index) },
     { icon: mdiWeatherPouring, label: 'Pioggia', value: weather?.precipitation_probability != null ? `${weather.precipitation_probability}%` : '—', sub: 'Probabilità' },
     { icon: mdiWeatherWindy, label: 'Vento', value: weather?.wind_speed != null ? `${weather.wind_speed} km/h` : '—', sub: windLabel(weather?.wind_speed) },
     { icon: mdiWaterOutline, label: 'Umidità est.', value: weather?.humidity != null ? `${Math.round(weather.humidity)}%` : '—', sub: humLabel(weather?.humidity) },
@@ -265,8 +265,11 @@ function WeatherCard({ weather }) {
       <div className="wc-now">
         <div className="wc-left">
           <div className="wc-now-top">
-            <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={2.3} /></span>
-            <div className="wc-temp">
+            <span className="wc-ic">
+              <Icon className="wc-sun" path={mdiWhiteBalanceSunny} size={2.1} />
+              <Icon className="wc-cloud" path={mdiWeatherPartlyCloudy} size={2.45} />
+            </span>
+            <div className={`wc-temp ${weather?.temperature == null ? 'empty' : ''}`}>
               <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
               <span>{weather?.description || '—'}</span>
             </div>
@@ -697,14 +700,16 @@ function HomeOverview({ rooms, lights, status, weather, now, onSelectRoom, logs,
       {/* Riga 1 — stat card */}
       <StatRow rooms={rooms} status={status} now={now} energy={energy} />
 
-      {/* Riga 2 — Stato della casa | Meteo | Home Engine */}
-      <div className="home2-row r3">
+      {/* Riga 2 — Meteo esterno */}
+      <WeatherCard weather={weather} />
+
+      {/* Riga 3 — Stato della casa | Home Engine */}
+      <div className="home2-row r2">
         <HomeStateCard rooms={rooms} lights={lights} status={status} overview={overview} />
-        <WeatherCard weather={weather} />
         <HomeEngineCard overview={overview} />
       </div>
 
-      {/* Riga 3 — Energia | Impianti | Alert | Eventi */}
+      {/* Riga 4 — Energia | Impianti | Alert | Eventi */}
       <div className="home2-row r4">
         <EnergyClimateCard energy={energy} />
         <SystemsHealthCard overview={overview} boiler={boiler} />
@@ -712,7 +717,7 @@ function HomeOverview({ rooms, lights, status, weather, now, onSelectRoom, logs,
         <TimelineCard logs={logs} />
       </div>
 
-      {/* Riga 4 — Consumo impianto (totale reale) | Stanze */}
+      {/* Riga 5 — Consumo impianto (totale reale) | Stanze */}
       <div className="home2-row r2">
         <EnergyOpsCard energy={energy} />
         <RoomsStrip rooms={rooms} lights={lights} boiler={boiler} onSelectRoom={onSelectRoom} now={now} />
