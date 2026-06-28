@@ -286,7 +286,7 @@ function WeatherCard({ weather }) {
       <div className="wc-stats">
         {stats.map((s) => (
           <div key={s.label} className="wc-stat">
-            <span className="wc-st-ic"><Icon path={s.icon} size={0.95} /></span>
+            <span className="wc-st-ic"><Icon path={s.icon} size={0.9} /></span>
             <div className="wc-st-txt">
               <span>{s.label}</span>
               <strong>{s.value}</strong>
