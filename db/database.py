@@ -108,6 +108,17 @@ CREATE TABLE IF NOT EXISTS mpc_advisory (
     timestamp        TEXT NOT NULL
 );
 
+-- panasonic_daily: consumo GIORNALIERO dal cloud Panasonic (aggregazione "Month",
+-- quella che combacia con l'app). Lo storico ORARIO sotto-conta; questa e' la
+-- fonte giusta. Consumo unico d'impianto (replicato sui device): una serie basta.
+CREATE TABLE IF NOT EXISTS panasonic_daily (
+    device_id   TEXT NOT NULL,
+    day         TEXT NOT NULL,   -- 'YYYYMMDD'
+    consumption REAL,            -- kWh del giorno
+    cost        REAL,            -- costo cloud Panasonic (informativo)
+    PRIMARY KEY (device_id, day)
+);
+
 -- Indici per le query temporali (history) e per stanza.
 CREATE INDEX IF NOT EXISTS idx_advisory_room_ts
     ON mpc_advisory (room_name, timestamp);
@@ -423,16 +434,16 @@ class Database:
 
     # -- storico energia Panasonic (panasonic_history) ----------------------
     async def get_month_energy(self) -> dict[str, Any]:
-        """Energia GIORNALIERA del mese corrente. Il consumo Panasonic e' UNICO
-        d'impianto (replicato sui 3 device): per ogni ora prendo il MAX tra i
-        device, poi sommo per giorno. Ritorna {days:[{day,kwh}], today_kwh, month_kwh}."""
+        """Energia GIORNALIERA del mese corrente dall'aggregazione MENSILE Panasonic
+        (panasonic_daily) — combacia con l'app (lo storico orario sotto-conta).
+        Consumo unico d'impianto: per ogni giorno MAX tra i device. Ritorna
+        {days:[{day,kwh}], today_kwh, month_kwh}."""
         month = datetime.now().strftime("%Y%m")
         today = datetime.now().strftime("%Y%m%d")
         cursor = await self._db.execute(
-            "SELECT substr(data_time,1,8) AS day, SUM(h) AS kwh FROM ("
-            " SELECT data_time, MAX(consumption) AS h FROM panasonic_history "
-            " WHERE substr(data_time,1,6)=? AND consumption IS NOT NULL "
-            " GROUP BY data_time) GROUP BY day ORDER BY day",
+            "SELECT day, MAX(consumption) AS kwh FROM panasonic_daily "
+            "WHERE substr(day,1,6)=? AND consumption IS NOT NULL "
+            "GROUP BY day ORDER BY day",
             (month,),
         )
         rows = await cursor.fetchall()
@@ -440,6 +451,16 @@ class Database:
         today_kwh = next((d["kwh"] for d in days if d["day"] == today), 0.0)
         month_kwh = round(sum(d["kwh"] for d in days), 2)
         return {"days": days, "today_kwh": today_kwh, "month_kwh": month_kwh}
+
+    async def upsert_panasonic_daily(self, rows: list[tuple]) -> int:
+        """Upsert consumo GIORNALIERO Panasonic (PK device_id+day; oggi cambia)."""
+        if not rows:
+            return 0
+        cur = await self._db.executemany(
+            "INSERT OR REPLACE INTO panasonic_daily "
+            "(device_id, day, consumption, cost) VALUES (?, ?, ?, ?)", rows)
+        await self._db.commit()
+        return cur.rowcount
 
     async def upsert_panasonic_history(self, rows: list[tuple]) -> int:
         """Inserisce/aggiorna lo storico orario Panasonic (PK device_id+data_time;

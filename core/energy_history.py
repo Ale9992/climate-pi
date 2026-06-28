@@ -66,28 +66,23 @@ class EnergyHistoryLogger:
                 pass
 
     async def _refresh(self) -> None:
+        # Aggregazione MENSILE Panasonic (una serie d'impianto basta): da' il
+        # consumo per-giorno che combacia con l'app. Lo storico orario sotto-conta.
         devs = self._ac.device_ids
         if not devs:
             return
-        did = devs[0]   # consumo d'impianto: una serie basta per il grafico
-        today = datetime.now()
-        total = 0
-        for offset in (1, 0):   # ieri (bordo) + oggi (parziale, da aggiornare)
-            date = (today - timedelta(days=offset)).strftime("%Y%m%d")
-            recs = await self._ac.fetch_day_history(did, date)
-            rows = []
-            for r in recs:
-                dt = r.get("dataTime")
-                if not dt:
-                    continue
-                d, hh = dt.split()
-                ts = f"{d[:4]}-{d[4:6]}-{d[6:8]}T{int(hh):02d}:00:00"
-                rows.append((did, dt, ts, _val(r, "averageSettingTemp"),
-                             _val(r, "averageInsideTemp"), _val(r, "averageOutsideTemp"),
-                             _val(r, "consumption"), _val(r, "cost"),
-                             _val(r, "coolConsumptionRate"), _val(r, "heatConsumptionRate")))
-            if rows:
-                total += await self._db.upsert_panasonic_history(rows)
-            await asyncio.sleep(2.5)   # gentile col rate-limit
-        if total:
-            logger.info("Storico energia aggiornato (%d righe).", total)
+        did = devs[0]
+        date = datetime.now().strftime("%Y%m%d")
+        recs = await self._ac.fetch_month_history(did, date)
+        rows = []
+        for r in recs:
+            day = str(r.get("dataTime") or "")
+            cons = r.get("consumption")
+            if not day or cons in (None, _MISS):   # giorni futuri/mancanti = -255
+                continue
+            cost = r.get("cost")
+            rows.append((did, day, float(cons),
+                         None if cost in (None, _MISS) else float(cost)))
+        n = await self._db.upsert_panasonic_daily(rows)
+        if n:
+            logger.info("Consumo giornaliero aggiornato (%d giorni).", n)

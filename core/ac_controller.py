@@ -418,6 +418,21 @@ class ACController:
             logger.warning("Storico Panasonic %s non disponibile: %s", date, exc)
             return []
 
+    async def fetch_month_history(self, device_id: str, date: str) -> list:
+        """Storico GIORNALIERO di un mese (date 'YYYYMMDD'): aggregazione 'Month'
+        del cloud, quella che combacia con l'app. Ritorna historyDataList o []."""
+        info = self._infos.get(device_id)
+        if info is None or self._client is None:
+            return []
+        try:
+            resp = await self._with_retry(
+                f"month_history({date})",
+                lambda: self._client.history(info.id, "Month", date))
+            return (resp or {}).get("parameters", {}).get("historyDataList", []) or []
+        except Exception as exc:  # noqa: BLE001
+            logger.warning("Storico mensile Panasonic %s non disponibile: %s", date, exc)
+            return []
+
     # -- consumo energetico (per dashboard e ottimizzazione) ----------------
     async def get_today_energy(self, device_id: str) -> Optional[dict[str, Any]]:
         """
