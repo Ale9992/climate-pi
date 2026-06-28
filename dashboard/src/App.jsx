@@ -561,7 +561,7 @@ function HomeEngineCard({ overview }) {
       </div>
       <div className="he-status">
         <span className={`he-badge ${stable ? 'good' : 'warn'}`}>
-          <Icon path={stable ? mdiCheckCircle : mdiAlertCircleOutline} size={0.8} />
+          <Icon path={stable ? mdiCheckCircle : mdiAlertCircleOutline} size={0.95} />
           {stable ? 'Casa stabile' : 'Da verificare'}
         </span>
         {he.comfort != null && <span className="he-comfort">Comfort {he.comfort}%</span>}
@@ -573,8 +573,19 @@ function HomeEngineCard({ overview }) {
       <div className="he-suggest">
         <span className="he-sg-label">Suggerimento</span>
         <p>{he.suggestion || '—'}</p>
+        <em className="he-action">{(!he.next_decision || he.next_decision === 'Nessuna') ? 'Nessuna azione richiesta.' : he.next_decision}</em>
       </div>
       <span className="card-link he-more">Vedi dettagli →</span>
+      <svg className="he-illu" viewBox="0 0 130 100" aria-hidden="true">
+        <rect x="30" y="54" width="5" height="26" rx="2" fill="#b9a3e6" />
+        <circle cx="32" cy="46" r="16" fill="#cdbcf0" />
+        <circle cx="23" cy="52" r="9" fill="#d7caf4" />
+        <path d="M61 52 L88 29 L115 52 Z" fill="#a98fd9" />
+        <rect x="67" y="52" width="42" height="30" rx="2" fill="#c6b4ec" />
+        <rect x="84" y="62" width="12" height="20" rx="1.5" fill="#a98fd9" />
+        <rect x="71" y="58" width="9" height="9" rx="1.5" fill="#ece5fb" />
+        <rect x="16" y="80" width="102" height="4" rx="2" fill="#ddd2f5" />
+      </svg>
     </div>
   )
 }

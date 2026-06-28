@@ -4139,19 +4139,22 @@ body { background:
 .he-ic { width: 34px; height: 34px; border-radius: 10px; display: flex; align-items: center; justify-content: center;
   background: color-mix(in srgb, var(--indigo) 16%, transparent); color: var(--indigo); }
 .he-status { display: flex; align-items: center; justify-content: space-between; gap: 8px;
-  padding: 10px 12px; border-radius: 12px; background: color-mix(in srgb, var(--ok) 10%, transparent); margin-bottom: 12px; }
-.he-badge { display: inline-flex; align-items: center; gap: 6px; font-weight: 700; font-size: 0.9rem; color: var(--ink); }
+  padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--ok) 11%, transparent); margin-bottom: 12px; }
+.he-badge { display: inline-flex; align-items: center; gap: 8px; font-weight: 700; font-size: 1rem; color: var(--ink); }
 .he-badge.good { color: #1f9d57; }
+.he-badge.good svg { color: #2ea44f; }
 .he-badge.warn { color: #c4631e; }
-.he-comfort { font-size: 0.72rem; font-weight: 700; color: #1f9d57; padding: 3px 9px; border-radius: 999px;
+.he-comfort { font-size: 0.74rem; font-weight: 700; color: #1f9d57; padding: 4px 11px; border-radius: 999px;
   background: color-mix(in srgb, var(--ok) 18%, transparent); }
-.he-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 12px; }
-.he-grid > div { display: flex; flex-direction: column; gap: 2px; }
-.he-grid span { font-size: 0.7rem; color: var(--muted); }
-.he-grid strong { font-size: 0.96rem; font-weight: 700; color: var(--ink); }
-.he-suggest { padding: 11px 12px; border-radius: 12px; background: color-mix(in srgb, var(--muted) 8%, transparent); }
-.he-sg-label { font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--muted); font-weight: 700; }
-.he-suggest p { margin: 4px 0 0; font-size: 0.82rem; color: var(--ink); line-height: 1.35; }
+.he-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px;
+  padding: 12px 14px; border-radius: 14px; background: color-mix(in srgb, var(--muted) 9%, transparent); }
+.he-grid > div { display: flex; flex-direction: column; gap: 3px; }
+.he-grid span { font-size: 0.72rem; color: var(--muted); }
+.he-grid strong { font-size: 1.02rem; font-weight: 700; color: var(--ink); }
+.he-suggest { padding: 0; background: transparent; }
+.he-sg-label { font-size: 0.72rem; color: #7c5cdb; font-weight: 700; }
+.he-suggest p { margin: 5px 0 0; font-size: 0.84rem; color: var(--ink); line-height: 1.4; max-width: 64%; }
+.he-action { display: block; margin-top: 5px; font-size: 0.82rem; color: #1f9d57; font-style: normal; font-weight: 600; max-width: 64%; }
 
 /* --- Energia climatizzazione --------------------------------------------- */
 .ecl-big { display: flex; align-items: baseline; gap: 10px; flex-wrap: wrap; }
@@ -4241,5 +4244,8 @@ body { background:
 .ev-row b { font-size: 0.72rem; color: var(--muted); font-weight: 600; flex: 0 0 auto; }
 
 /* --- Home Engine: link + sfondo casa ------------------------------------- */
-.he-card { position: relative; }
+.he-card { position: relative; overflow: hidden; }
 .he-more { display: inline-block; margin-top: 12px; }
+.he-card > * { position: relative; z-index: 1; }
+.he-illu { position: absolute; right: 14px; bottom: 12px; width: 122px; height: auto; opacity: 0.92; pointer-events: none; }
+.he-card > .he-illu { z-index: 0; }
