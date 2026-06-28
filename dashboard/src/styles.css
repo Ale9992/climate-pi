@@ -4043,11 +4043,12 @@ body { background:
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
-.stat-card { display: flex; align-items: center; gap: 14px; padding: 18px 20px; }
+.stat-card { display: flex; align-items: center; gap: 16px; padding: 20px 22px; }
 .sc-ic {
-  width: 48px; height: 48px; border-radius: 14px; flex: 0 0 auto;
+  width: 56px; height: 56px; border-radius: 16px; flex: 0 0 auto;
   display: flex; align-items: center; justify-content: center;
 }
+.sc-ic svg { width: 26px; height: 26px; }
 .sc-ic.blue  { background: rgba(91, 141, 239, 0.14); color: #5b8def; }
 .sc-ic.amber { background: rgba(240, 168, 104, 0.18); color: #e8893f; }
 .sc-ic.green { background: rgba(47, 158, 143, 0.16); color: #2f9e8f; }
@@ -4093,35 +4094,44 @@ body { background:
 .cg-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
 .cg-center strong { font-size: 1.9rem; font-weight: 800; color: var(--ink); line-height: 1; }
 .cg-center span { font-size: 0.72rem; color: var(--muted); }
-.hs-list { display: flex; flex-direction: column; gap: 11px; min-width: 0; flex: 1; }
-.hs-list > div { display: flex; align-items: center; gap: 10px; color: var(--indigo); }
+.hs-list { display: flex; flex-direction: column; gap: 10px; min-width: 0; flex: 1; }
+.hs-list > div { display: flex; align-items: center; gap: 11px; }
+.hs-ic { width: 32px; height: 32px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--indigo) 13%, transparent); color: var(--indigo); }
 .hs-list > div > div { display: flex; flex-direction: column; line-height: 1.15; }
 .hs-list strong { font-size: 0.98rem; font-weight: 700; color: var(--ink); }
 .hs-list span { font-size: 0.74rem; color: var(--muted); }
 
 /* --- Meteo esterno -------------------------------------------------------- */
-.weather-card .wc-head { display: flex; align-items: baseline; justify-content: space-between; margin-bottom: 12px; }
+/* override del vecchio .weather-card (display:grid 2 colonne) che spaccava
+   header e contenuto: nel nuovo layout la card e' una colonna verticale. */
+.home2 .weather-card { display: flex; flex-direction: column; align-items: stretch; grid-template-columns: none; min-height: 0; }
+.weather-card .wc-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 14px; }
 .weather-card .wc-head h3 { margin: 0; }
 .wc-loc { font-size: 0.78rem; color: var(--muted); font-weight: 600; }
-.wc-now { display: grid; grid-template-columns: auto auto 1fr; align-items: center; gap: 12px; }
-.wc-ic { color: #e8a368; display: flex; }
-.wc-temp { display: flex; flex-direction: column; line-height: 1.1; }
-.wc-temp strong { font-size: 2rem; font-weight: 800; color: var(--ink); }
-.wc-temp span { font-size: 0.82rem; color: var(--ink); font-weight: 600; }
-.wc-temp em { font-size: 0.74rem; color: var(--muted); font-style: normal; }
-.wc-chart { min-width: 0; }
-.wc-chart .spark { width: 100%; height: 48px; display: block; }
+.wc-now { display: grid; grid-template-columns: minmax(120px, auto) 1fr; align-items: center; gap: 20px; }
+.wc-left { display: flex; align-items: center; gap: 12px; }
+.wc-ic { color: #e8a368; display: flex; flex: 0 0 auto; }
+.wc-temp { display: flex; flex-direction: column; line-height: 1.05; }
+.wc-temp strong { font-size: 2.6rem; font-weight: 800; color: var(--ink); }
+.wc-temp span { font-size: 0.9rem; color: var(--ink); font-weight: 600; }
+.wc-temp em { font-size: 0.78rem; color: var(--muted); font-style: normal; margin-top: 2px; }
+.wc-chart { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.wc-chart .spark { width: 100%; height: 44px; display: block; }
 .spark-line { fill: none; stroke: var(--indigo); stroke-width: 2; }
 .spark-dot { fill: var(--indigo); }
-.wc-hours { display: flex; justify-content: space-between; margin-top: 2px; }
+.wc-hours, .wc-temps { display: flex; justify-content: space-between; }
 .wc-hours span { font-size: 0.62rem; color: var(--muted); }
-.wc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-top: 16px; }
-.wc-stat { display: flex; flex-direction: column; gap: 1px; padding: 8px 9px; border-radius: 12px;
+.wc-temps span { font-size: 0.66rem; color: var(--ink); font-weight: 600; }
+.wc-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 9px; margin-top: 18px; }
+.wc-stat { display: flex; align-items: center; gap: 8px; padding: 9px 10px; border-radius: 12px;
   background: color-mix(in srgb, var(--muted) 9%, transparent); min-width: 0; }
-.wc-st-label { display: inline-flex; align-items: center; gap: 3px; font-size: 0.64rem; color: var(--muted); }
-.wc-st-label svg { color: var(--indigo); flex: 0 0 auto; }
-.wc-stat strong { font-size: 0.92rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
-.wc-stat em { font-size: 0.62rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wc-st-ic { width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center;
+  background: color-mix(in srgb, var(--indigo) 14%, transparent); color: var(--indigo); }
+.wc-st-txt { display: flex; flex-direction: column; line-height: 1.12; min-width: 0; }
+.wc-st-txt span { font-size: 0.64rem; color: var(--muted); }
+.wc-st-txt strong { font-size: 0.9rem; font-weight: 700; color: var(--ink); white-space: nowrap; }
+.wc-st-txt em { font-size: 0.62rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* --- Home Engine ---------------------------------------------------------- */
 .he-card .he-head { display: flex; align-items: center; gap: 9px; margin-bottom: 12px; }
@@ -4159,14 +4169,13 @@ body { background:
 .ecl-tiles span { font-size: 0.66rem; color: var(--muted); }
 
 /* --- Stato impianti ------------------------------------------------------- */
-.sh-list { display: flex; flex-direction: column; gap: 9px; }
-.sh-list > div { display: grid; grid-template-columns: auto 1fr auto; grid-template-rows: auto auto;
-  column-gap: 9px; align-items: center; }
-.sh-list svg { grid-row: 1 / 3; color: var(--indigo); }
-.sh-name { font-size: 0.88rem; font-weight: 600; color: var(--ink); }
-.sh-status { font-size: 0.74rem; font-weight: 700; color: #1f9d57; text-align: right; }
+.sh-list { display: flex; flex-direction: column; gap: 11px; }
+.sh-list > div { display: flex; align-items: center; gap: 10px; }
+.sh-list svg { color: var(--indigo); flex: 0 0 auto; }
+.sh-name { flex: 1; font-size: 0.88rem; font-weight: 600; color: var(--ink); }
+.sh-status { font-size: 0.78rem; font-weight: 700; color: #1f9d57; }
 .sh-list .warn .sh-status { color: #c4631e; }
-.sh-detail { grid-column: 2 / 4; font-size: 0.68rem; color: var(--muted); font-style: normal; }
+.sh-detail { font-size: 0.72rem; color: var(--muted); font-style: normal; min-width: 50px; text-align: right; }
 
 /* --- Alert: ultima automazione ------------------------------------------- */
 .alert-last { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--glass-border); }
@@ -4210,3 +4219,27 @@ body { background:
   .wc-now { grid-template-columns: auto 1fr; }
   .wc-chart { grid-column: 1 / -1; }
 }
+
+/* --- Eventi recenti (icone colorate) + link card ------------------------- */
+.card-link { font-size: 0.76rem; font-weight: 700; color: var(--indigo); cursor: pointer; }
+.ev-list { display: flex; flex-direction: column; gap: 11px; }
+.ev-row { display: flex; align-items: center; gap: 10px; }
+.ev-ic { width: 28px; height: 28px; border-radius: 50%; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
+.ev-ic.blue { background: color-mix(in srgb, var(--indigo) 15%, transparent); color: var(--indigo); }
+.ev-ic.amber { background: color-mix(in srgb, #e8893f 18%, transparent); color: #d9772f; }
+.ev-ic.green { background: color-mix(in srgb, var(--ok) 16%, transparent); color: #1f9d57; }
+.ev-ic.red { background: color-mix(in srgb, #e5484d 16%, transparent); color: #c0392b; }
+.ev-txt { display: flex; flex-direction: column; line-height: 1.18; min-width: 0; flex: 1; }
+.ev-txt strong { font-size: 0.82rem; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-txt em { font-size: 0.68rem; color: var(--muted); font-style: normal; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ev-row b { font-size: 0.72rem; color: var(--muted); font-weight: 600; flex: 0 0 auto; }
+
+/* --- Home Engine: link + sfondo casa ------------------------------------- */
+.he-card { position: relative; }
+.he-more { display: inline-block; margin-top: 12px; }
+.he-card::after {
+  content: ""; position: absolute; right: 14px; bottom: 12px; width: 86px; height: 70px; opacity: 0.5; pointer-events: none;
+  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'><g fill='none' stroke='%23a9b6ff' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'><path d='M14 40 L50 14 L86 40'/><path d='M22 38 V70 H78 V38'/><rect x='42' y='50' width='16' height='20'/><circle cx='72' cy='20' r='6' fill='%23ffd27a' stroke='none'/></g></svg>");
+}
+.he-card > * { position: relative; z-index: 1; }
+.he-card::after { z-index: 0; }

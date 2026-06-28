@@ -263,25 +263,33 @@ function WeatherCard({ weather }) {
         {weather?.location && <span className="wc-loc">{weather.location}</span>}
       </div>
       <div className="wc-now">
-        <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={1.7} /></span>
-        <div className="wc-temp">
-          <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
-          <span>{weather?.description || '—'}</span>
-          {weather?.apparent_temperature != null && <em>Percepita {Math.round(weather.apparent_temperature)}°</em>}
+        <div className="wc-left">
+          <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={2.2} /></span>
+          <div className="wc-temp">
+            <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
+            <span>{weather?.description || '—'}</span>
+            {weather?.apparent_temperature != null && <em>Percepita {Math.round(weather.apparent_temperature)}°</em>}
+          </div>
         </div>
         <div className="wc-chart">
-          <Sparkline points={forecast.map((p) => p.temperature)} />
           <div className="wc-hours">
             {forecast.map((p) => <span key={p.time}>{(p.time || '').slice(11, 13)}</span>)}
+          </div>
+          <Sparkline points={forecast.map((p) => p.temperature)} />
+          <div className="wc-temps">
+            {forecast.map((p) => <span key={p.time}>{p.temperature != null ? `${Math.round(p.temperature)}°` : '—'}</span>)}
           </div>
         </div>
       </div>
       <div className="wc-stats">
         {stats.map((s) => (
           <div key={s.label} className="wc-stat">
-            <span className="wc-st-label"><Icon path={s.icon} size={0.6} />{s.label}</span>
-            <strong>{s.value}</strong>
-            <em>{s.sub}</em>
+            <span className="wc-st-ic"><Icon path={s.icon} size={0.66} /></span>
+            <div className="wc-st-txt">
+              <span>{s.label}</span>
+              <strong>{s.value}</strong>
+              <em>{s.sub}</em>
+            </div>
           </div>
         ))}
       </div>
@@ -445,27 +453,37 @@ function EnergyOpsCard({ energy }) {
 
 function TimelineCard({ logs }) {
   const items = (logs || []).slice(0, 5)
-
+  const meta = (l) => {
+    const t = `${l.action_taken || ''} ${l.rule_matched || ''}`.toLowerCase()
+    if (t.includes('cool') || t.includes('heat') || t.includes('dry') || t.includes('ac') || t.includes('powerful') || t.includes('quiet')) return { icon: mdiSnowflake, tone: 'blue', cat: 'Automazione' }
+    if (t.includes('luce') || t.includes('light')) return { icon: mdiLightbulbVariant, tone: 'amber', cat: 'Luci' }
+    if (t.includes('sensor')) return { icon: mdiAccessPoint, tone: 'blue', cat: 'Sensore' }
+    if (t.includes('caldaia') || t.includes('boiler')) return { icon: mdiRadiator, tone: 'red', cat: 'Caldaia' }
+    return { icon: mdiBrain, tone: 'green', cat: 'Sistema' }
+  }
   return (
     <div className="card timeline-card">
       <div className="home-rooms-head">
         <h3>Eventi recenti</h3>
-        <span>ultimi eventi</span>
+        <span className="card-link">Vedi tutti</span>
       </div>
       {items.length === 0 ? (
         <div className="timeline-empty">Nessun evento recente</div>
       ) : (
-        <div className="timeline-list">
-          {items.map((l) => (
-            <div key={l.id}>
-              <i />
-              <span>
-                <strong>{l.room_name}</strong>
-                <em>{l.action_taken || l.rule_matched || 'evento'}</em>
-              </span>
-              <b>{(l.timestamp || '').slice(11, 16)}</b>
-            </div>
-          ))}
+        <div className="ev-list">
+          {items.map((l) => {
+            const m = meta(l)
+            return (
+              <div key={l.id} className="ev-row">
+                <span className={`ev-ic ${m.tone}`}><Icon path={m.icon} size={0.62} /></span>
+                <div className="ev-txt">
+                  <strong>{l.action_taken || l.rule_matched || 'Evento'}</strong>
+                  <em>{l.room_name} · {m.cat}</em>
+                </div>
+                <b>{(l.timestamp || '').slice(11, 16)}</b>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>
@@ -520,7 +538,7 @@ function HomeStateCard({ rooms, lights, status, overview }) {
         <div className="hs-list">
           {list.map((r) => (
             <div key={r.label}>
-              <Icon path={r.icon} size={0.78} />
+              <span className="hs-ic"><Icon path={r.icon} size={0.72} /></span>
               <div><strong>{r.value}</strong><span>{r.label}</span></div>
             </div>
           ))}
@@ -554,6 +572,7 @@ function HomeEngineCard({ overview }) {
         <span className="he-sg-label">Suggerimento</span>
         <p>{he.suggestion || '—'}</p>
       </div>
+      <span className="card-link he-more">Vedi dettagli →</span>
     </div>
   )
 }
