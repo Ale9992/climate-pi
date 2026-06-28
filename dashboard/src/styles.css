@@ -4111,10 +4111,7 @@ body { background:
 .wx-card .wc-now { display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 14px; }
 .wx-card .wc-left { display: flex; flex-direction: column; gap: 8px; min-width: 0; }
 .wx-card .wc-now-top { display: flex; align-items: center; gap: 11px; }
-.wx-card .wc-ic { position: relative; width: 56px; height: 50px; flex: 0 0 auto; display: block; }
-.wx-card .wc-ic svg { position: absolute; }
-.wx-card .wc-ic .wc-sun { left: 0; top: -3px; color: #f4b731; }
-.wx-card .wc-ic .wc-cloud { right: 0; bottom: 0; color: #cfe0f0; filter: drop-shadow(0 2px 3px rgba(118,132,152,0.18)); }
+.wx-card .wc-ic { flex: 0 0 auto; display: flex; align-items: center; color: #e8a368; }
 .wx-card .wc-temp { display: flex; flex-direction: column; line-height: 1.05; min-width: 0; }
 .wx-card .wc-temp strong { font-size: 2.3rem; font-weight: 800; color: var(--ink); }
 .wx-card .wc-temp span { font-size: 0.84rem; color: var(--muted); font-weight: 500; }
@@ -4246,9 +4243,3 @@ body { background:
 /* --- Home Engine: link + sfondo casa ------------------------------------- */
 .he-card { position: relative; }
 .he-more { display: inline-block; margin-top: 12px; }
-.he-card::after {
-  content: ""; position: absolute; right: 14px; bottom: 12px; width: 86px; height: 70px; opacity: 0.5; pointer-events: none;
-  background: no-repeat center / contain url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 80'><g fill='none' stroke='%23a9b6ff' stroke-width='3' stroke-linejoin='round' stroke-linecap='round'><path d='M14 40 L50 14 L86 40'/><path d='M22 38 V70 H78 V38'/><rect x='42' y='50' width='16' height='20'/><circle cx='72' cy='20' r='6' fill='%23ffd27a' stroke='none'/></g></svg>");
-}
-.he-card > * { position: relative; z-index: 1; }
-.he-card::after { z-index: 0; }

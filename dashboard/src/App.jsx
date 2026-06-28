@@ -265,10 +265,7 @@ function WeatherCard({ weather }) {
       <div className="wc-now">
         <div className="wc-left">
           <div className="wc-now-top">
-            <span className="wc-ic">
-              <Icon className="wc-sun" path={mdiWhiteBalanceSunny} size={2.1} />
-              <Icon className="wc-cloud" path={mdiWeatherPartlyCloudy} size={2.45} />
-            </span>
+            <span className="wc-ic"><Icon path={mdiWeatherPartlyCloudy} size={2.3} /></span>
             <div className={`wc-temp ${weather?.temperature == null ? 'empty' : ''}`}>
               <strong>{weather?.temperature != null ? `${weather.temperature.toFixed(1)}°` : '—'}</strong>
               <span>{weather?.description || '—'}</span>
