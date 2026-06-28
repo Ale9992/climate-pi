@@ -32,12 +32,32 @@ _LON = 12.5
 _URL = (
     "https://api.open-meteo.com/v1/forecast"
     "?latitude={lat}&longitude={lon}"
-    "&current=temperature_2m,relative_humidity_2m"
-    "&hourly=temperature_2m"
+    "&current=temperature_2m,relative_humidity_2m,apparent_temperature,"
+    "weather_code,wind_speed_10m,precipitation"
+    "&hourly=temperature_2m,relative_humidity_2m,precipitation_probability,uv_index"
     "&forecast_days=2&timezone=Europe%2FRome"
 )
 
 _CACHE_TTL = 900.0  # 15 min: il meteo cambia lentamente, niente martellamento
+
+# Codici meteo WMO -> descrizione breve in italiano (per la card meteo).
+_WMO = {
+    0: "Sereno", 1: "Prevalentemente sereno", 2: "Parz. nuvoloso", 3: "Coperto",
+    45: "Nebbia", 48: "Nebbia con brina", 51: "Pioggerella", 53: "Pioggerella",
+    55: "Pioggerella", 56: "Pioggia gelata", 57: "Pioggia gelata",
+    61: "Pioggia debole", 63: "Pioggia", 65: "Pioggia forte",
+    66: "Pioggia gelata", 67: "Pioggia gelata", 71: "Neve debole", 73: "Neve",
+    75: "Neve forte", 77: "Nevischio", 80: "Rovesci", 81: "Rovesci",
+    82: "Rovesci forti", 85: "Rovesci di neve", 86: "Rovesci di neve",
+    95: "Temporale", 96: "Temporale con grandine", 99: "Temporale con grandine",
+}
+
+
+def weather_description(code) -> Optional[str]:
+    """Descrizione testuale dal codice WMO Open-Meteo (None se ignoto)."""
+    if code is None:
+        return None
+    return _WMO.get(int(code), "—")
 
 
 class WeatherProvider:
@@ -76,11 +96,29 @@ class WeatherProvider:
 
         cur = data.get("current", {})
         hourly = data.get("hourly", {})
+        times = hourly.get("time", [])
+        # UV e probabilita' di pioggia "correnti" = valore orario dell'ora attuale.
+        now_hour = time.strftime("%Y-%m-%dT%H:00")
+        uv_h = hourly.get("uv_index", [])
+        pop_h = hourly.get("precipitation_probability", [])
+        cur_uv = cur_pop = None
+        for i, t in enumerate(times):
+            if t == now_hour:
+                cur_uv = uv_h[i] if i < len(uv_h) else None
+                cur_pop = pop_h[i] if i < len(pop_h) else None
+                break
         payload = {
             "current": cur.get("temperature_2m"),
             "humidity": cur.get("relative_humidity_2m"),
-            "hourly": list(zip(hourly.get("time", []),
-                               hourly.get("temperature_2m", []))),
+            "apparent": cur.get("apparent_temperature"),
+            "weather_code": cur.get("weather_code"),
+            "wind_speed": cur.get("wind_speed_10m"),
+            "precipitation": cur.get("precipitation"),
+            "uv_index": cur_uv,
+            "precipitation_probability": cur_pop,
+            "hourly": list(zip(times,
+                               hourly.get("temperature_2m", []),
+                               hourly.get("relative_humidity_2m", []))),
         }
         self._cache = (time.monotonic(), payload)
         return payload
@@ -89,6 +127,11 @@ class WeatherProvider:
         """T esterna attuale (°C, 0.1° di risoluzione) o None."""
         p = await self._fetch()
         return p.get("current") if p else None
+
+    async def get_current_humidity(self) -> Optional[float]:
+        """Umidita' relativa esterna attuale (%) o None."""
+        p = await self._fetch()
+        return p.get("humidity") if p else None
 
     async def get_forecast(self, hours: int = 12) -> list[tuple[str, float]]:
         """
@@ -99,5 +142,14 @@ class WeatherProvider:
         if not p:
             return []
         now = time.strftime("%Y-%m-%dT%H:00")
-        fut = [(t, v) for t, v in p["hourly"] if t >= now and v is not None]
+        fut = [(t, temp) for t, temp, _rh in p["hourly"] if t >= now and temp is not None]
+        return fut[:hours]
+
+    async def get_humidity_forecast(self, hours: int = 12) -> list[tuple[str, float]]:
+        """Previsione oraria dell'umidita' relativa esterna: lista (iso_time, %)."""
+        p = await self._fetch()
+        if not p:
+            return []
+        now = time.strftime("%Y-%m-%dT%H:00")
+        fut = [(t, rh) for t, _temp, rh in p["hourly"] if t >= now and rh is not None]
         return fut[:hours]

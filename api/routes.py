@@ -32,6 +32,7 @@ from api.models import (
 )
 from core import config as config_module
 from core.config import Action
+from core.weather import weather_description
 
 logger = logging.getLogger("climate.api")
 router = APIRouter(prefix="/api")
@@ -69,6 +70,87 @@ def _require(component, name: str):
     if component is None:
         raise HTTPException(status_code=503, detail=f"{name} non inizializzato")
     return component
+
+
+# ===========================================================================
+# Helper per i dati 'derivati' della home (comfort, WiFi, energia, Home Engine)
+# ===========================================================================
+_SENSOR_FRESH_S = 1800.0  # sensore considerato 'fresco' entro 30 min
+
+
+def _wifi_signal() -> Optional[float]:
+    """Livello segnale WiFi (dBm) da /proc/net/wireless (gira sul Pi). None se assente."""
+    try:
+        with open("/proc/net/wireless") as f:
+            for line in f:
+                if ":" in line and "Inter" not in line and "face" not in line:
+                    return float(line.split()[3].rstrip("."))
+    except Exception:  # noqa: BLE001 - non-Linux o niente WiFi
+        return None
+    return None
+
+
+def _wifi_quality(dbm: Optional[float]) -> Optional[int]:
+    """dBm -> qualita' % (mappa lineare -90 dBm=0% .. -40 dBm=100%)."""
+    if dbm is None:
+        return None
+    return max(0, min(100, int(round((dbm + 90) * 2))))
+
+
+def _wifi_label(dbm: Optional[float]) -> str:
+    if dbm is None:
+        return "—"
+    if dbm >= -55:
+        return "Ottima"
+    if dbm >= -67:
+        return "Buona"
+    if dbm >= -75:
+        return "Discreta"
+    return "Debole"
+
+
+def _comfort_score(temp, hum, band, season: Optional[str]) -> Optional[int]:
+    """Punteggio comfort 0-100 di una stanza data la T/RH e la banda di comfort
+    stagionale. 100 dentro la banda; cala fuori (T pesa piu' dell'umidita')."""
+    if temp is None or band is None:
+        return None
+    target = band.target_temp
+    deadband = band.deadband or 1.0
+    if season == "riscaldamento":
+        lo, hi = target - deadband, target + 2.0
+    else:  # raffrescamento / mezza stagione
+        lo, hi = target - 2.0, target + deadband
+    if temp < lo:
+        tpen = (lo - temp) * 10.0
+    elif temp > hi:
+        tpen = (temp - hi) * 12.0
+    else:
+        tpen = 0.0
+    hpen = 0.0
+    rh_max = band.humidity_dry_threshold or 65.0
+    if hum is not None and hum > rh_max:
+        hpen = (hum - rh_max) * 1.2
+    return max(0, min(100, int(round(100 - tpen - hpen))))
+
+
+def _energy_derived(data: dict, rate: float) -> dict:
+    """Campi derivati per le card energia: ieri, media 7gg, proiezione, delta %."""
+    days = data.get("days", [])
+    today = datetime.now().strftime("%Y%m%d")
+    today_kwh = data.get("today_kwh", 0.0)
+    past = [d["kwh"] for d in days if d["day"] != today]
+    yest = past[-1] if past else None
+    last7 = past[-7:]
+    avg7 = round(sum(last7) / len(last7), 1) if last7 else None
+    projected = round(max(today_kwh, avg7), 1) if avg7 is not None else round(today_kwh, 1)
+    delta_pct = round((today_kwh - yest) / yest * 100) if yest else None
+    return {
+        "yesterday_kwh": yest,
+        "avg7_kwh": avg7,
+        "projected_today_kwh": projected,
+        "delta_pct": delta_pct,
+        "today_cost": round(today_kwh * rate, 2),
+    }
 
 
 # ===========================================================================
@@ -449,9 +531,20 @@ async def get_weather() -> WeatherState:
     ][:12]
     temp = payload.get("current")
     hum = payload.get("humidity")
+    app_t = payload.get("apparent")
+    wind = payload.get("wind_speed")
+    uv = payload.get("uv_index")
+    pop = payload.get("precipitation_probability")
+    loc = getattr(ctx.config, "location_name", None) if ctx.config else None
     return WeatherState(
         temperature=round(temp, 1) if temp is not None else None,
         humidity=round(hum, 0) if hum is not None else None,
+        apparent_temperature=round(app_t, 1) if app_t is not None else None,
+        description=weather_description(payload.get("weather_code")),
+        wind_speed=round(wind, 0) if wind is not None else None,
+        precipitation_probability=round(pop, 0) if pop is not None else None,
+        uv_index=round(uv, 1) if uv is not None else None,
+        location=loc,
         forecast=forecast,
     )
 
@@ -471,4 +564,127 @@ async def get_energy_month() -> dict:
     data["today_cost"] = round(data["today_kwh"] * rate, 2)
     data["month_cost"] = round(data["month_kwh"] * rate, 2)
     data["rate"] = rate
+    data.update(_energy_derived(data, rate))
     return data
+
+
+@router.get("/overview")
+async def get_overview() -> dict:
+    """Dati 'derivati' per la home: comfort, salute impianti, WiFi, Home Engine.
+
+    Tutto da fonti reali gia' in funzione: letture sensori (comfort), flag
+    connessione, /proc/net/wireless (WiFi), aggregazione energia e consigli del
+    controllo predittivo (mpc_advisory) per la card Home Engine."""
+    import re
+
+    cfg = ctx.config
+    db = _require(ctx.database, "database")
+    season = None
+    if ctx.season_manager is not None:
+        try:
+            season = ctx.season_manager.season.value
+        except Exception:  # noqa: BLE001
+            pass
+
+    # --- comfort per stanza + casa, e freschezza sensori (un solo giro) -----
+    rooms_comfort: dict[str, int] = {}
+    scores: list[int] = []
+    sensor_total = sensor_ok = 0
+    if cfg:
+        for room in cfg.rooms:
+            has_sensor = bool(
+                room.ikea_sensor_id
+                or getattr(room, "remote_sensor_url", None)
+                or getattr(room, "switchbot_mac", None))
+            latest = await db.get_latest_reading(room.name)
+            if has_sensor:
+                sensor_total += 1
+                if latest and latest.get("timestamp"):
+                    try:
+                        age = (datetime.now() - datetime.fromisoformat(latest["timestamp"])).total_seconds()
+                        if age <= _SENSOR_FRESH_S:
+                            sensor_ok += 1
+                    except Exception:  # noqa: BLE001
+                        pass
+            if not latest or latest.get("temperature") is None:
+                continue
+            band = None
+            if getattr(room, "comfort", None):
+                band = (room.comfort.winter if season == "riscaldamento"
+                        else room.comfort.summer)
+            sc = _comfort_score(latest["temperature"], latest.get("humidity"), band, season)
+            if sc is not None:
+                rooms_comfort[room.name] = sc
+                scores.append(sc)
+    comfort_home = int(round(sum(scores) / len(scores))) if scores else None
+
+    # --- WiFi ---------------------------------------------------------------
+    dbm = _wifi_signal()
+    wifi = {"dbm": dbm, "quality": _wifi_quality(dbm), "label": _wifi_label(dbm)}
+
+    # --- salute impianti ----------------------------------------------------
+    systems = [
+        {"key": "home_engine", "name": "Home Engine", "online": True, "detail": "attivo"},
+        {"key": "panasonic", "name": "Panasonic", "online": bool(ctx.panasonic_connected),
+         "detail": "online" if ctx.panasonic_connected else "offline"},
+        {"key": "dirigera", "name": "Dirigera", "online": bool(ctx.dirigera_connected),
+         "detail": "online" if ctx.dirigera_connected else "offline"},
+        {"key": "sensori", "name": "Sensori", "online": sensor_ok == sensor_total and sensor_total > 0,
+         "detail": f"{sensor_ok}/{sensor_total} online"},
+        {"key": "wifi", "name": "Rete Wi-Fi", "online": dbm is not None,
+         "detail": (f"{int(dbm)} dBm" if dbm is not None else "—")},
+    ]
+
+    # --- energia oggi + proiezione ------------------------------------------
+    rate = 0.0
+    if cfg and getattr(cfg, "tariff", None):
+        rate = round(cfg.tariff.variable_eur_kwh * (1 + cfg.tariff.vat_rate), 4)
+    em = await db.get_month_energy()
+    ed = _energy_derived(em, rate)
+
+    # --- Home Engine: prossima decisione + suggerimento dal MPC -------------
+    act_map = {"Cool": "Raffredda", "Dry": "Deumidifica", "Pre-raffr.": "Pre-raffredda"}
+    next_decision = "Nessuna"
+    suggestion = "Nessun suggerimento disponibile."
+    try:
+        advisories = await db.get_latest_advisories()
+    except Exception:  # noqa: BLE001
+        advisories = []
+    decisions: list[str] = []
+    worst = None
+    for a in advisories:
+        msg = a.get("message") or ""
+        m = re.search(r"consiglio:\s*([A-Za-z\-\.]+)", msg)
+        act = m.group(1) if m else None
+        if act in act_map:
+            decisions.append(f"{act_map[act]} {a['room_name']}")
+        tn, tp = a.get("temp_now"), a.get("temp_pred_end")
+        if tn is not None and tp is not None:
+            rise = tp - tn
+            if worst is None or rise > worst[0]:
+                worst = (rise, a["room_name"], tn, tp)
+    if decisions:
+        next_decision = decisions[0]
+    if worst and worst[0] > 0.3:
+        suggestion = (f"Tra ~6h {worst[1]} salira' a {worst[3]:.0f}° "
+                      f"(ora {worst[2]:.0f}°).")
+    elif worst:
+        suggestion = (f"{worst[1]} stabile (~{worst[3]:.0f}° tra 6h). "
+                      f"Nessuna azione richiesta.")
+
+    home_engine = {
+        "stable": comfort_home is not None and comfort_home >= 80,
+        "comfort": comfort_home,
+        "projected_kwh_today": ed["projected_today_kwh"],
+        "next_decision": next_decision,
+        "suggestion": suggestion,
+    }
+
+    return {
+        "comfort_home": comfort_home,
+        "rooms_comfort": rooms_comfort,
+        "wifi": wifi,
+        "systems": systems,
+        "energy": {**em, **ed},
+        "home_engine": home_engine,
+    }

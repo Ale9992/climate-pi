@@ -263,6 +263,24 @@ class Database:
         )
         await self._db.commit()
 
+    async def get_latest_advisories(self, max_age_min: int = 60) -> list[dict[str, Any]]:
+        """Ultimo consiglio MPC per ogni stanza (entro max_age_min minuti).
+
+        Serve alla card 'Home Engine' della dashboard: prossima decisione +
+        suggerimento, presi dal controllo predittivo gia' in funzione."""
+        since = (datetime.now() - timedelta(minutes=max_age_min)).isoformat(timespec="seconds")
+        cursor = await self._db.execute(
+            "SELECT a.room_name, a.temp_now, a.temp_pred_end, a.hours_to_ceiling, "
+            "a.message, a.timestamp FROM mpc_advisory a "
+            "JOIN (SELECT room_name, MAX(timestamp) ts FROM mpc_advisory "
+            "      WHERE timestamp >= ? GROUP BY room_name) m "
+            "ON a.room_name = m.room_name AND a.timestamp = m.ts "
+            "ORDER BY a.room_name",
+            (since,),
+        )
+        rows = await cursor.fetchall()
+        return [dict(r) for r in rows]
+
     async def get_presence_events(self, person: str) -> list[tuple]:
         """Transizioni di presenza (timestamp, is_home) di una persona, ordinate."""
         cursor = await self._db.execute(

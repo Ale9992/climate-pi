@@ -264,6 +264,7 @@ class Config:
     # proprie si mettono in config.yaml -> location: {latitude, longitude}.
     latitude: float = 41.9
     longitude: float = 12.5
+    location_name: Optional[str] = None   # nome localita' mostrato in dashboard
     boiler: Optional[Boiler] = None
 
     # -- helper di lookup ---------------------------------------------------
@@ -440,6 +441,7 @@ def load_config(path: str | Path = DEFAULT_CONFIG_PATH) -> Config:
         boiler=boiler,
         latitude=float(location.get("latitude", 41.9)),
         longitude=float(location.get("longitude", 12.5)),
+        location_name=location.get("name"),
         dirigera_ip=dirigera.get("ip_address", ""),
         dirigera_token=dirigera.get("token", ""),
         panasonic_username=panasonic.get("username", ""),

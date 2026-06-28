@@ -85,6 +85,12 @@ class WeatherState(BaseModel):
     """Meteo esterno corrente + previsione breve."""
     temperature: Optional[float] = None
     humidity: Optional[float] = None
+    apparent_temperature: Optional[float] = None   # temperatura percepita
+    description: Optional[str] = None               # "Sereno", "Pioggia", ...
+    wind_speed: Optional[float] = None              # km/h
+    precipitation_probability: Optional[float] = None  # % pioggia (ora corrente)
+    uv_index: Optional[float] = None
+    location: Optional[str] = None                  # nome localita' (da config)
     forecast: list[WeatherPoint] = Field(default_factory=list)
 
 
