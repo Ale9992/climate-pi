@@ -30,6 +30,10 @@ class LightController:
         # Cache: (epoch, lista-dict). TTL breve, lo stato luci cambia spesso.
         self._cache: tuple[float, list[dict]] | None = None
         self._CACHE_TTL = 10.0
+        # Cache degli OGGETTI luce (per id): il comando riusa questi invece di
+        # get_light_by_id (1 round-trip all'hub in meno) -> set ~2x piu' veloce.
+        # Ripopolata a ogni lettura.
+        self._light_objs: dict = {}
 
     def _ensure_loop(self) -> asyncio.AbstractEventLoop:
         if self._loop is None:
@@ -40,7 +44,9 @@ class LightController:
     def _read_blocking(self) -> list[dict]:
         """Legge tutte le luci dall'hub (bloccante)."""
         out: list[dict] = []
+        objs: dict = {}
         for light in self._hub.get_lights():
+            objs[light.id] = light
             a = light.attributes
             caps = getattr(light, "capabilities", None)
             can = getattr(caps, "can_receive", []) if caps else []
@@ -55,6 +61,7 @@ class LightController:
                 "supports_level": "lightLevel" in can,
                 "supports_color_temp": "colorTemperature" in can,
             })
+        self._light_objs = objs
         return out
 
     async def get_lights(self, use_cache: bool = True) -> list[dict]:
@@ -101,7 +108,7 @@ class LightController:
     # -- controllo ----------------------------------------------------------
     def _set_blocking(self, light_id: str, on: Optional[bool],
                       level: Optional[int], color_temp: Optional[int]) -> None:
-        light = self._hub.get_light_by_id(light_id)
+        light = self._light_objs.get(light_id) or self._hub.get_light_by_id(light_id)
         if on is not None:
             light.set_light(on)
         if level is not None:

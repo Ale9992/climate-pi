@@ -1,4 +1,4 @@
-import { useRef } from 'react'
+import { useRef, useState } from 'react'
 import Icon from '@mdi/react'
 import { mdiLightbulb, mdiLightbulbOutline, mdiCeilingLight, mdiLightbulbGroup } from '@mdi/js'
 import { api } from '../api.js'
@@ -6,11 +6,21 @@ import { api } from '../api.js'
 // Controlli luce in stile iOS: tile con toggle a pillola + dimmer.
 export default function RoomLights({ room, lights, onChange }) {
   const timer = useRef({})
-  const list = lights || []
+  // Override OTTIMISTICO: il toggle si muove subito al click; il comando al
+  // Dirigera (~1s) parte in background e lo stato reale arriva col refresh.
+  const [override, setOverride] = useState({})   // {lightId: is_on}
+  const list = (lights || []).map((l) => (l.id in override ? { ...l, is_on: override[l.id] } : l))
   const onCount = list.filter((l) => l.is_on).length
 
-  const toggleOne = (lt) =>
-    api.setLight(lt.id, { on: !lt.is_on }).then(onChange).catch(onChange)
+  const toggleOne = (lt) => {
+    const next = !lt.is_on
+    setOverride((o) => ({ ...o, [lt.id]: next }))   // feedback immediato
+    const finish = async () => {
+      try { await onChange?.() } catch { /* ignore */ }
+      setOverride((o) => { const c = { ...o }; delete c[lt.id]; return c })
+    }
+    api.setLight(lt.id, { on: next }).then(finish, finish)
+  }
   const dim = (lt, level) => {
     clearTimeout(timer.current[lt.id])
     timer.current[lt.id] = setTimeout(
