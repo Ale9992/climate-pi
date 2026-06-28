@@ -1541,13 +1541,18 @@ body { background:
 
 .home-hero {
   grid-column: span 2;
-  min-height: 168px;
-  display: grid;
-  grid-template-columns: minmax(210px, 0.95fr) minmax(250px, 1.1fr) auto;
-  align-items: center;
-  gap: 18px;
-  padding: 24px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 20px 22px;
 }
+.home-hero-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.home-hero-id { min-width: 0; }
 
 .home-kicker {
   margin: 0 0 4px;
@@ -1570,7 +1575,7 @@ body { background:
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .presence-badges span {
@@ -1595,9 +1600,9 @@ body { background:
 
 .home-hero-summary {
   display: inline-block;
-  margin-top: 9px;
+  margin-top: 0;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: 0.88rem;
   font-weight: 650;
 }
 
@@ -1642,8 +1647,15 @@ body { background:
 }
 
 .home-hero-icon {
-  color: var(--indigo);
   flex: 0 0 auto;
+  width: 46px;
+  height: 46px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  color: var(--indigo);
+  background: rgba(142, 84, 255, 0.12);
 }
 
 .weather-card {
@@ -2570,14 +2582,6 @@ body { background:
   .home-rooms-card,
   .energy-ops-card {
     grid-column: 1 / -1;
-  }
-
-  .home-hero {
-    grid-template-columns: minmax(220px, 0.8fr) 1fr;
-  }
-
-  .home-hero-icon {
-    display: none;
   }
 
   .weather-card {

@@ -437,27 +437,29 @@ function HomeOverview({ rooms, lights, status, weather, lastRefresh, now, onSele
       <HudStrip rooms={rooms} lights={lights} status={status} lastRefresh={lastRefresh} now={now} />
 
       <div className="card home-hero">
-        <div className="home-hero-main">
-          <p className="home-kicker">Casa</p>
-          <span className="home-hero-summary">Refresh {lastRefresh ? relTime(lastRefresh, now) : 'in corso'} · {rooms.length} stanze</span>
-        </div>
-        <div className="home-hero-insights">
-          <div className="hero-facts">
-            {heroFacts.map((fact) => (
-              <div key={fact.label} className="hero-insight">
-                <Icon path={fact.icon} size={0.72} />
-                <span>{fact.label}</span>
-                <strong>{fact.value}</strong>
-              </div>
-            ))}
+        <div className="home-hero-head">
+          <div className="home-hero-id">
+            <p className="home-kicker">Casa</p>
+            <div className={`presence-badges ${peopleHome.length ? '' : 'empty'}`}>
+              {peopleHome.length ? peopleHome.map((name) => (
+                <span key={name}>{personName(name)}</span>
+              )) : <span>Nessuno presente</span>}
+            </div>
           </div>
-          <div className={`presence-badges ${peopleHome.length ? '' : 'empty'}`}>
-            {peopleHome.length ? peopleHome.map((name) => (
-              <span key={name}>{personName(name)}</span>
-            )) : <span>Nessuno presente</span>}
-          </div>
+          <span className="home-hero-icon">
+            <Icon path={status.presence_home ? mdiHomeAccount : mdiHomeExportOutline} size={1.5} />
+          </span>
         </div>
-        <Icon className="home-hero-icon" path={status.presence_home ? mdiHomeAccount : mdiHomeExportOutline} size={2.2} />
+        <div className="hero-facts">
+          {heroFacts.map((fact) => (
+            <div key={fact.label} className="hero-insight">
+              <Icon path={fact.icon} size={0.72} />
+              <span>{fact.label}</span>
+              <strong>{fact.value}</strong>
+            </div>
+          ))}
+        </div>
+        <span className="home-hero-summary">Refresh {lastRefresh ? relTime(lastRefresh, now) : 'in corso'} · {rooms.length} stanze</span>
       </div>
 
       <WeatherCard weather={weather} status={status} />
