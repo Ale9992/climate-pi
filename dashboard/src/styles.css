@@ -4295,7 +4295,7 @@ body { background:
 
 /* CLIMATIZZATORE */
 .rv-acpwr { margin-left: auto; display: inline-flex; align-items: center; gap: 7px; padding: 6px 12px; border-radius: 999px;
-  border: 1px solid var(--glass-border); background: #fff; font-size: 0.78rem; font-weight: 700; color: var(--muted); cursor: pointer; }
+  border: 1px solid var(--glass-border); background: var(--glass-strong); font-size: 0.78rem; font-weight: 700; color: var(--muted); cursor: pointer; }
 .rv-acpwr-dot { width: 9px; height: 9px; border-radius: 50%; background: #c4c9d2; }
 .rv-acpwr.on { color: #2563c9; } .rv-acpwr.on .rv-acpwr-dot { background: #4a7fe0; }
 .rv-clima-top { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; margin: 6px 0 18px; }
@@ -4306,7 +4306,7 @@ body { background:
 .rv-set-sub { font-size: 0.74rem; color: var(--muted); }
 .rv-gauge { position: relative; width: 200px; height: 200px; justify-self: center; }
 .rv-gauge svg { width: 100%; height: 100%; }
-.rv-g-track { fill: none; stroke: #e9edf4; stroke-width: 14; stroke-linecap: round; }
+.rv-g-track { fill: none; stroke: color-mix(in srgb, var(--muted) 26%, transparent); stroke-width: 14; stroke-linecap: round; }
 .rv-g-fill { fill: none; stroke: #4a7fe0; stroke-width: 14; stroke-linecap: round; transition: stroke-dasharray 0.6s cubic-bezier(0.22,1,0.36,1); }
 .rv-g-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 1px; }
 .rv-g-center > svg { color: var(--indigo); }
@@ -4317,24 +4317,24 @@ body { background:
 .rv-mi-val { display: inline-flex; align-items: center; gap: 6px; font-size: 0.95rem; font-weight: 700; color: var(--ink); margin-top: 3px; }
 .rv-mi-val svg { color: var(--indigo); }
 .rv-slider { display: flex; align-items: center; gap: 12px; }
-.rv-slider button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--glass-border); background: #fff;
+.rv-slider button { width: 38px; height: 38px; border-radius: 50%; border: 1px solid var(--glass-border); background: var(--glass-strong);
   font-size: 1.2rem; color: var(--ink); cursor: pointer; flex: 0 0 auto; }
 .rv-slider button:disabled { opacity: 0.4; }
 .rv-slider input[type=range] { flex: 1; -webkit-appearance: none; appearance: none; height: 6px; border-radius: 3px;
-  background: linear-gradient(to right, #4a7fe0 var(--fill), #e9edf4 var(--fill)); }
+  background: linear-gradient(to right, #4a7fe0 var(--fill), color-mix(in srgb, var(--muted) 26%, transparent) var(--fill)); }
 .rv-slider input[type=range]::-webkit-slider-thumb { -webkit-appearance: none; width: 20px; height: 20px; border-radius: 50%;
   background: #fff; border: 3px solid #4a7fe0; cursor: pointer; box-shadow: 0 1px 4px rgba(0,0,0,0.2); }
 .rv-ticks { display: flex; justify-content: space-between; margin: 6px 4px 0; }
 .rv-ticks span { font-size: 0.66rem; color: var(--muted); }
 .rv-modes { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin: 18px 0 12px; }
 .rv-mode { display: flex; flex-direction: column; align-items: center; gap: 5px; padding: 12px 4px; border-radius: 14px;
-  border: 1px solid var(--glass-border); background: #fff; color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
+  border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--muted); font-size: 0.8rem; font-weight: 600; cursor: pointer; }
 .rv-mode svg { color: var(--muted); }
 .rv-mode.active { background: #4a7fe0; border-color: #4a7fe0; color: #fff; }
 .rv-mode.active svg { color: #fff; }
 .rv-eco { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rv-ecobtn { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 13px; border-radius: 14px;
-  border: 1px solid var(--glass-border); background: #fff; color: var(--ink); font-weight: 600; cursor: pointer; }
+  border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--ink); font-weight: 600; cursor: pointer; }
 .rv-ecobtn.active { background: color-mix(in srgb, var(--indigo) 14%, transparent); border-color: var(--indigo); color: #2563c9; }
 .rv-ecobtn:disabled { opacity: 0.45; }
 
@@ -4372,7 +4372,7 @@ body { background:
 /* AZIONI RAPIDE */
 .rv-qa-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 .rv-qa-btn { display: flex; align-items: center; gap: 10px; padding: 12px 13px; border-radius: 14px;
-  border: 1px solid var(--glass-border); background: #fff; color: var(--ink); font-size: 0.84rem; font-weight: 600; cursor: pointer; text-align: left; }
+  border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--ink); font-size: 0.84rem; font-weight: 600; cursor: pointer; text-align: left; }
 .rv-qa-btn.off { opacity: 0.5; cursor: default; }
 .rv-qa-ic { width: 30px; height: 30px; border-radius: 9px; flex: 0 0 auto; display: flex; align-items: center; justify-content: center; }
 .rv-qa-ic.red { background: color-mix(in srgb, #e5484d 14%, transparent); color: #d23b40; }
