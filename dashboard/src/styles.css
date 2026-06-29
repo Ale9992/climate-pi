@@ -4267,16 +4267,20 @@ body { background:
 .rv-cd-date { font-size: 0.74rem; color: var(--muted); }
 .rv-cd-time { font-size: 1.4rem; font-weight: 800; color: var(--ink); line-height: 1.1; }
 
-/* griglia principale (aree come il mockup) */
-.rv-grid { display: grid; grid-template-columns: 1.45fr 1fr 1fr; gap: 16px; align-items: start;
+/* griglia principale: blocco alto (clima | amb+sys | azioni a piena altezza)
+   + blocco basso (Andamento 24h | Dispositivi sulla stessa riga) */
+.rv-top-grid { display: grid; grid-template-columns: 1.4fr 1fr 1fr; gap: 16px; align-items: stretch;
   grid-template-areas:
-    "clima  amb     sys"
-    "clima  azioni  sys"
-    "chart  chart   sys"
-    "dev    dev     dev"; }
+    "clima  amb     azioni"
+    "clima  sys     azioni"; }
 .rv-a-clima { grid-area: clima; } .rv-a-amb { grid-area: amb; } .rv-a-sys { grid-area: sys; }
-.rv-a-azioni { grid-area: azioni; } .rv-a-chart { grid-area: chart; } .rv-a-dev { grid-area: dev; }
-.rv-grid > div > .card { height: 100%; }
+.rv-a-azioni { grid-area: azioni; }
+.rv-top-grid > div { min-width: 0; }
+.rv-top-grid > div > .card { height: 100%; }
+.rv-bot-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; align-items: stretch; }
+.rv-bot-grid > .card { height: 100%; }
+.rv-a-azioni .rv-qa { display: flex; flex-direction: column; }
+.rv-a-azioni .rv-qa-grid { flex: 1; grid-auto-rows: 1fr; }
 
 /* intestazioni card */
 .rv-card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
@@ -4403,12 +4407,13 @@ body { background:
 
 /* responsive */
 @media (max-width: 1100px) {
-  .rv-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "clima clima" "amb sys" "azioni sys" "chart chart" "dev dev"; }
+  .rv-top-grid { grid-template-columns: 1fr 1fr; grid-template-areas: "clima clima" "amb azioni" "sys azioni"; }
   .rv-dev-grid { grid-template-columns: repeat(2, 1fr); }
 }
 @media (max-width: 760px) {
   .rv-top { grid-template-columns: 1fr 1fr; }
-  .rv-grid { grid-template-columns: 1fr; grid-template-areas: "clima" "amb" "sys" "azioni" "chart" "dev"; }
+  .rv-top-grid { grid-template-columns: 1fr; grid-template-areas: "clima" "amb" "sys" "azioni"; }
+  .rv-bot-grid { grid-template-columns: 1fr; }
   .rv-bottom { grid-template-columns: 1fr 1fr; }
   .rv-amb-grid, .rv-dev-grid { grid-template-columns: 1fr 1fr; }
   .rv-clima-top { grid-template-columns: 1fr; justify-items: center; gap: 14px; }

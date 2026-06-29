@@ -330,13 +330,15 @@ export default function RoomView({ room, status, overview, energy, now, dateStr,
         ))}
       </div>
 
-      <div className="rv-grid">
+      <div className="rv-top-grid">
         {ac ? <div className="rv-a-clima"><ClimateControl room={room} onAction={() => { onAction && onAction(); load() }} /></div> : <div className="rv-a-clima" />}
         <div className="rv-a-amb"><AmbientCard room={room} comfort={comfort} now={now} /></div>
         <div className="rv-a-sys"><SystemPanel overview={overview} room={room} now={now} onRefresh={() => { onAction && onAction(); load() }} /></div>
         <div className="rv-a-azioni"><QuickActions room={room} onAction={() => { onAction && onAction(); load() }} /></div>
-        <div className="rv-a-chart"><RoomChart data={history} /></div>
-        <div className="rv-a-dev"><DeviceList room={room} overview={overview} now={now} /></div>
+      </div>
+      <div className="rv-bot-grid">
+        <RoomChart data={history} />
+        <DeviceList room={room} overview={overview} now={now} />
       </div>
 
       <div className="rv-bottom">
