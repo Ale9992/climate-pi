@@ -18,6 +18,7 @@ import RoomLights from './components/RoomLights.jsx'
 import History from './components/History.jsx'
 import ConfigPanel from './components/ConfigPanel.jsx'
 import EventLog from './components/EventLog.jsx'
+import RoomView from './components/RoomView.jsx'
 
 const POLL_MS = 30000
 const MESI = ['Gen', 'Feb', 'Mar', 'Apr', 'Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott', 'Nov', 'Dic']
@@ -908,46 +909,18 @@ export default function App() {
         )}
 
         {section === 'room' && (
-          <>
-            <div className="room-grid">
-              {/* Riepilogo casa (sempre visibile in alto) */}
-              <div className="card mini-clock">
-                <div className="mc-date">{dateStr}</div>
-                <div className="mc-time">{hh}:{mm}</div>
-              </div>
-              <div className="card mini-stat">
-                <span className="card-ic" style={{ color: sm.tint }}><Icon path={sm.icon} size={0.8} /></span>
-                <div><div className="ms-val">{sm.label}</div><div className="ms-lbl">stagione {status.outdoor_avg_temperature != null ? `· ${status.outdoor_avg_temperature}°` : ''}</div></div>
-              </div>
-              <div className="card mini-stat">
-                <span className="card-ic" style={{ color: '#e8b53f' }}><Icon path={mdiLightningBolt} size={0.8} /></span>
-                <div><div className="ms-val">{totalEnergy.toFixed(2)} kWh</div><div className="ms-lbl">consumo oggi</div></div>
-              </div>
-              <div className="card mini-stat">
-                <span className="card-ic" style={{ color: status.presence_home ? '#2f9e8f' : '#c4631e' }}>
-                  <Icon path={status.presence_home ? mdiHomeAccount : mdiHomeExportOutline} size={0.8} /></span>
-                <div><div className="ms-val">{status.presence_home ? 'In casa' : 'Fuori'}</div><div className="ms-lbl">presenza</div></div>
-              </div>
-
-              {/* DISPOSITIVI DELLA STANZA SELEZIONATA */}
-              {acOfRoom && (
-                <div className="card span-thermo">
-                  <div className="card-head"><h3>Climatizzatore · {curRoom}</h3></div>
-                  <Thermostat room={acOfRoom} onAction={refresh} />
-                </div>
-              )}
-              {curRoom === boilerRoom && (
-                <div className="card span-thermo">
-                  <div className="card-head"><h3>Caldaia · {curRoom}</h3></div>
-                  <BoilerCard boiler={boiler} onToggle={toggleBoiler} />
-                </div>
-              )}
-              <RoomLights room={curRoom} lights={lightsOfRoom} onChange={refresh} />
-              {acOfRoom && <EnvironmentCard room={acOfRoom} now={now} />}
-              <SystemCard status={status} lastRefresh={lastRefresh} activeRoom={acOfRoom} now={now} />
-            </div>
-
-          </>
+          <RoomView
+            room={acOfRoom || { name: curRoom, ac: null }}
+            status={status}
+            overview={overview}
+            energy={energy}
+            now={now}
+            dateStr={dateStr}
+            hh={hh}
+            mm={mm}
+            season={sm}
+            onAction={refresh}
+          />
         )}
 
         {section === 'history' && <main className="content"><History rooms={rooms} /></main>}

@@ -549,6 +549,78 @@ async def get_weather() -> WeatherState:
     )
 
 
+@router.get("/rooms/{room_name}/detail")
+async def get_room_detail(room_name: str) -> dict:
+    """Dati REALI aggiuntivi per la pagina di una stanza: comfort, tempo AC oggi
+    (da mpc_samples), energia/costo AC oggi, prossima azione programmata, presenza.
+    Niente dati inventati: cio' che manca (CO2, qualita' aria, ecc.) non e' qui."""
+    db = _require(ctx.database, "database")
+    cfg = ctx.config
+    room = None
+    if cfg:
+        for r in cfg.rooms:
+            if r.name == room_name:
+                room = r
+                break
+    season = None
+    if ctx.season_manager is not None:
+        try:
+            season = ctx.season_manager.season.value
+        except Exception:  # noqa: BLE001
+            pass
+
+    # comfort della stanza
+    comfort = None
+    latest = await db.get_latest_reading(room_name)
+    if room is not None and latest and latest.get("temperature") is not None:
+        band = None
+        if getattr(room, "comfort", None):
+            band = room.comfort.winter if season == "riscaldamento" else room.comfort.summer
+        comfort = _comfort_score(latest["temperature"], latest.get("humidity"), band, season)
+
+    # tempo AC oggi (stima da campioni periodici)
+    runtime_min = await db.get_ac_runtime_today(room_name)
+
+    # energia/costo AC oggi (dal device Panasonic della stanza)
+    rate = 0.0
+    if cfg and getattr(cfg, "tariff", None):
+        rate = round(cfg.tariff.variable_eur_kwh * (1 + cfg.tariff.vat_rate), 4)
+    energy_kwh = None
+    if ctx.ac_controller is not None and room is not None and room.panasonic_device_id:
+        try:
+            e = await ctx.ac_controller.get_today_energy(room.panasonic_device_id)
+            energy_kwh = e["consumption"] if e else None
+        except Exception:  # noqa: BLE001
+            energy_kwh = None
+    cost = round(energy_kwh * rate, 2) if energy_kwh is not None else None
+
+    # prossima azione programmata (spegnimento notturno dallo scheduler)
+    next_action = None
+    if cfg and getattr(cfg, "force_off_time", None):
+        next_action = {"label": "Spegnimento programmato", "time": cfg.force_off_time}
+
+    # presenza (globale: per-stanza serve il sensore mmWave, non ancora installato)
+    presence_home = None
+    people = None
+    pm = ctx.presence_manager
+    if pm is not None and getattr(pm, "_cfg", None) is not None and pm._cfg.enabled:
+        try:
+            presence_home = pm.is_home()
+            people = len(pm.people_home())
+        except Exception:  # noqa: BLE001
+            pass
+
+    return {
+        "comfort": comfort,
+        "ac_runtime_today_min": runtime_min,
+        "ac_energy_today_kwh": energy_kwh,
+        "ac_cost_today": cost,
+        "next_action": next_action,
+        "presence_home": presence_home,
+        "people": people,
+    }
+
+
 @router.get("/energy/month")
 async def get_energy_month() -> dict:
     """Consumo GIORNALIERO del mese corrente (totale d'IMPIANTO, non per-AC: il

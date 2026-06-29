@@ -281,6 +281,18 @@ class Database:
         rows = await cursor.fetchall()
         return [dict(r) for r in rows]
 
+    async def get_ac_runtime_today(self, room_name: str, sample_minutes: int = 5) -> int:
+        """Minuti stimati di AC acceso OGGI per una stanza, dai campioni periodici
+        mpc_samples (snapshot ogni ~5 min). Stima = n. campioni con ac_power='On'
+        moltiplicato per l'intervallo. Reale (non inventato), risoluzione ~5 min."""
+        day = datetime.now().strftime("%Y-%m-%d")
+        cursor = await self._db.execute(
+            "SELECT COUNT(*) FROM mpc_samples WHERE room_name=? AND ac_power='On' "
+            "AND substr(timestamp,1,10)=?", (room_name, day))
+        row = await cursor.fetchone()
+        n = row[0] if row else 0
+        return int(n * sample_minutes)
+
     async def get_presence_events(self, person: str) -> list[tuple]:
         """Transizioni di presenza (timestamp, is_home) di una persona, ordinate."""
         cursor = await self._db.execute(
