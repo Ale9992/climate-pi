@@ -359,6 +359,25 @@ function HudStrip({ rooms, lights, status, lastRefresh, now }) {
   )
 }
 
+// Trasforma il log grezzo dell'automazione ("ON mode=Cool temp=22.0 fan=Auto…")
+// in una frase leggibile ("Raffrescamento a 22°").
+const MODE_IT = { Cool: 'Raffrescamento', Heat: 'Riscaldamento', Dry: 'Deumidificazione', Fan: 'Ventilazione', Auto: 'Modalità Auto' }
+const prettyAction = (s) => {
+  if (!s) return 'Evento'
+  const t = String(s).trim()
+  if (/^off/i.test(t)) return 'Spegnimento'
+  if (/^on/i.test(t)) {
+    const mode = (t.match(/mode=(\w+)/i) || [])[1]
+    const temp = (t.match(/temp=([\d.]+)/i) || [])[1]
+    const eco = (t.match(/eco=(\w+)/i) || [])[1]
+    let label = mode ? (MODE_IT[mode] || mode) : 'Accensione'
+    if (temp && mode !== 'Fan') label += ` a ${Math.round(parseFloat(temp))}°`
+    if (eco && eco !== 'Auto') label += ` · ${eco}`
+    return label
+  }
+  return t.length > 42 ? t.slice(0, 42) + '…' : t
+}
+
 function AlertPanel({ rooms, status, now, logs }) {
   const last = (logs || [])[0]
   const alerts = []
@@ -406,7 +425,7 @@ function AlertPanel({ rooms, status, now, logs }) {
         <div className="alert-last">
           <span className="al-label">Ultima automazione</span>
           <div className="al-row">
-            <span><strong>{last.action_taken || last.rule_matched || 'evento'}</strong><em>{last.room_name}</em></span>
+            <span><strong>{prettyAction(last.action_taken || last.rule_matched)}</strong><em>{last.room_name}</em></span>
             <b>{(last.timestamp || '').slice(11, 16)}</b>
           </div>
         </div>
@@ -480,7 +499,7 @@ function TimelineCard({ logs }) {
               <div key={l.id} className="ev-row">
                 <span className={`ev-ic ${m.tone}`}><Icon path={m.icon} size={0.62} /></span>
                 <div className="ev-txt">
-                  <strong>{l.action_taken || l.rule_matched || 'Evento'}</strong>
+                  <strong>{prettyAction(l.action_taken || l.rule_matched)}</strong>
                   <em>{l.room_name} · {m.cat}</em>
                 </div>
                 <b>{(l.timestamp || '').slice(11, 16)}</b>
