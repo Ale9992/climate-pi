@@ -4443,3 +4443,15 @@ body { background:
 .rv-boiler-btn:disabled { opacity: 0.5; }
 .rv-boiler-note { font-size: 0.7rem; color: var(--muted); text-align: center; margin: 8px 0 0; }
 @media (max-width: 760px) { .rv-light-grid { grid-template-columns: 1fr; } }
+
+/* --- Top bar pagina stanza: back + nome stanza + ultimo aggiornamento ------ */
+.topbar-back { width: 44px; height: 44px; border-radius: 50%; flex: 0 0 auto; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  border: 1px solid var(--glass-border); background: var(--glass-strong); color: var(--ink);
+  transition: background .15s, transform .1s; }
+.topbar-back:hover { background: color-mix(in srgb, var(--indigo) 12%, var(--glass-strong)); }
+.topbar-back:active { transform: scale(0.94); }
+.welcome-hi { display: inline-flex; align-items: center; gap: 6px; }
+.welcome-hi svg { color: var(--muted); }
+.live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
+  background: #34c759; margin-left: 4px; vertical-align: middle; box-shadow: 0 0 0 3px color-mix(in srgb, #34c759 22%, transparent); }

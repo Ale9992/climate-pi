@@ -10,7 +10,7 @@ import {
   mdiHomeThermometerOutline, mdiPowerPlugOutline, mdiMenu, mdiClose,
   mdiWaterBoiler, mdiRadiator, mdiAirConditioner, mdiAccountGroup, mdiShieldCheck,
   mdiBrain, mdiCheckCircle, mdiWeatherWindy, mdiWhiteBalanceSunny, mdiUmbrellaOutline,
-  mdiChevronRight, mdiWaterOutline, mdiWeatherPouring,
+  mdiChevronRight, mdiWaterOutline, mdiWeatherPouring, mdiChevronLeft, mdiChevronDown,
 } from '@mdi/js'
 import { api } from './api.js'
 import Thermostat from './components/Thermostat.jsx'
@@ -887,10 +887,23 @@ export default function App() {
             <Icon path={mdiMenu} size={1} />
           </button>
           <div className="welcome">
-            <div className="avatar"><Icon path={mdiHomeAccount} size={1} /></div>
+            {section === 'room' ? (
+              <button className="topbar-back" onClick={() => setSection('overview')} title="Torna alla home">
+                <Icon path={mdiChevronLeft} size={1.2} />
+              </button>
+            ) : (
+              <div className="avatar"><Icon path={mdiHomeAccount} size={1} /></div>
+            )}
             <div>
-              <div className="welcome-hi">Casa</div>
-              <div className="welcome-sub">{dateStr} · {hh}:{mm}</div>
+              <div className="welcome-hi">
+                {section === 'room' ? (curRoom || 'Stanza') : 'Casa'}
+                {section === 'room' && <Icon path={mdiChevronDown} size={0.7} />}
+              </div>
+              <div className="welcome-sub">
+                {section === 'room'
+                  ? <>Ultimo aggiornamento: {lastRefresh ? relTime(lastRefresh, now) : '—'} <span className="live-dot" /></>
+                  : `${dateStr} · ${hh}:${mm}`}
+              </div>
             </div>
           </div>
           {/* Tema: bottone singolo che cicla (mobile). Le 3 voci restano per desktop. */}
@@ -938,6 +951,9 @@ export default function App() {
             hh={hh}
             mm={mm}
             season={sm}
+            lights={lightsOfRoom}
+            boiler={curRoom === boilerRoom ? boiler : null}
+            onToggleBoiler={toggleBoiler}
             onAction={refresh}
           />
         )}
