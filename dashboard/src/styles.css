@@ -3864,7 +3864,7 @@ body { background:
    NAV MOBILE: hamburger + drawer a scomparsa + bottone tema singolo.
    Base (desktop/kiosk): elementi mobile nascosti.
    =========================================================================== */
-.nav-burger, .theme-cycle, .nav-close, .nav-backdrop, .side-logo-label { display: none; }
+.nav-burger, .nav-close, .nav-backdrop, .side-logo-label { display: none; }
 
 @media (max-width: 640px) {
   /* Header: hamburger a sinistra + bottone tema singolo, una riga sola. */
@@ -4455,3 +4455,26 @@ body { background:
 .welcome-hi svg { color: var(--muted); }
 .live-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%;
   background: #34c759; margin-left: 4px; vertical-align: middle; box-shadow: 0 0 0 3px color-mix(in srgb, #34c759 22%, transparent); }
+
+/* --- Top bar: bottone tema SINGOLO (desktop) come la "Auto" del mockup ----- */
+.theme-cycle {
+  display: inline-flex; align-items: center; gap: 7px; flex: 0 0 auto; margin-left: auto;
+  padding: 10px 16px; border-radius: 999px; border: 1px solid var(--glass-border);
+  cursor: pointer; background: var(--glass-strong); color: var(--ink);
+  font-size: 0.82rem; font-weight: 700; box-shadow: var(--shadow-sm); white-space: nowrap;
+}
+.theme-cycle svg { color: #e8a33f; }
+.theme-cycle:hover { background: color-mix(in srgb, var(--indigo) 10%, var(--glass-strong)); }
+
+/* --- Top bar: 4 chip (data/stagione/energia/presenza) sulla riga del nome --- */
+.topbar-chips { display: flex; align-items: center; justify-content: center; gap: 12px; flex: 1 1 auto; margin: 0 14px; min-width: 0; overflow: hidden; }
+.tb-chip { display: flex; align-items: center; gap: 10px; padding: 9px 16px; border-radius: 16px;
+  background: var(--glass); border: 1px solid var(--glass-border); box-shadow: var(--shadow-sm); flex: 0 0 auto; }
+.tb-chip-date { flex-direction: column; align-items: flex-start; gap: 0; }
+.tbc-date { font-size: 0.66rem; color: var(--muted); }
+.tbc-time { font-size: 1.05rem; font-weight: 800; color: var(--ink); line-height: 1.1; }
+.tbc-ic { flex: 0 0 auto; display: flex; }
+.tbc-val { font-size: 0.92rem; font-weight: 800; color: var(--ink); line-height: 1.15; white-space: nowrap; }
+.tbc-lbl { font-size: 0.68rem; color: var(--muted); white-space: nowrap; }
+/* su schermi stretti le chip non ci stanno: si nascondono (restano nome+tema+bell) */
+@media (max-width: 1280px) { .topbar-chips { display: none; } }

@@ -364,7 +364,6 @@ export default function RoomView({ room, status, overview, energy, now, dateStr,
   if (!ac) {
     return (
       <div className="rv">
-        {topBar}
         <div className="rv-light-grid">
           <div className="card rv-lights">
             <div className="rv-card-head"><span className="rv-h-ic amber"><Icon path={mdiLightbulbVariant} size={0.8} /></span><h3>Luci · {room.name}</h3></div>
@@ -388,8 +387,6 @@ export default function RoomView({ room, status, overview, energy, now, dateStr,
   ]
   return (
     <div className="rv">
-      {topBar}
-
       <div className="rv-top-grid">
         {ac ? <div className="rv-a-clima"><ClimateControl room={room} onAction={() => { onAction && onAction(); load() }} /></div> : <div className="rv-a-clima" />}
         <div className="rv-a-amb"><AmbientCard room={room} comfort={comfort} now={now} /></div>

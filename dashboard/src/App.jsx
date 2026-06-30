@@ -906,18 +906,19 @@ export default function App() {
               </div>
             </div>
           </div>
-          {/* Tema: bottone singolo che cicla (mobile). Le 3 voci restano per desktop. */}
+          {section === 'room' && (
+            <div className="topbar-chips">
+              <div className="tb-chip tb-chip-date"><span className="tbc-date">{dateStr}</span><span className="tbc-time">{hh}:{mm}</span></div>
+              <div className="tb-chip"><span className="tbc-ic" style={{ color: sm.tint }}><Icon path={sm.icon} size={0.78} /></span><div><div className="tbc-val">{sm.label}</div><div className="tbc-lbl">Esterno {status.outdoor_avg_temperature != null ? `${status.outdoor_avg_temperature}°` : '—'}</div></div></div>
+              <div className="tb-chip"><span className="tbc-ic" style={{ color: '#e8b53f' }}><Icon path={mdiLightningBolt} size={0.78} /></span><div><div className="tbc-val">{(energy?.today_kwh ?? 0).toFixed(2)} kWh</div><div className="tbc-lbl">Consumo oggi</div></div></div>
+              <div className="tb-chip"><span className="tbc-ic" style={{ color: '#2f9e8f' }}><Icon path={mdiAccountGroup} size={0.78} /></span><div><div className="tbc-val">{status.presence_home ? 'In casa' : 'Fuori'}</div><div className="tbc-lbl">{Array.isArray(status.presence_people) ? status.presence_people.length : 0} persone</div></div></div>
+            </div>
+          )}
+          {/* Tema: bottone singolo che cicla auto -> light -> dark */}
           <button className="theme-cycle" onClick={cycleTheme} title={`Tema: ${themeMode}`}>
             <Icon path={theme === 'dark' ? mdiWeatherNight : mdiWeatherSunny} size={0.72} />
             <span>{themeMode === 'auto' ? 'Auto' : themeMode === 'light' ? 'Light' : 'Dark'}</span>
           </button>
-          <div className="theme-toggle">
-            <button className={themeMode === 'auto' ? 'on' : ''} onClick={() => setThemeMode('auto')} title={`Alba ${formatTime(sunrise)} · Tramonto ${formatTime(sunset)}`}>
-              <Icon path={theme === 'dark' ? mdiWeatherNight : mdiWeatherSunny} size={0.7} /> Auto
-            </button>
-            <button className={themeMode === 'light' ? 'on' : ''} onClick={() => setThemeMode('light')}><Icon path={mdiWeatherSunny} size={0.7} /> Light</button>
-            <button className={themeMode === 'dark' ? 'on' : ''} onClick={() => setThemeMode('dark')}><Icon path={mdiWeatherNight} size={0.7} /> Dark</button>
-          </div>
           <button className="bell"><Icon path={mdiBellOutline} size={0.9} /></button>
         </header>
 
