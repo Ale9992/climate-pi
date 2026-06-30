@@ -11,10 +11,14 @@ Pensato per girare 24/7 su un **Raspberry Pi**, senza cloud di terze parti oltre
 a quelli dei produttori, senza app proprietarie.
 
 ```
-Sensori IKEA Dirigera ──┐
-Stato AC Panasonic ─────┼──► Rule Engine ──► comanda gli AC (Cool/Heat/Dry…)
-Presenza FRITZ!Box ─────┘                └──► Dashboard web (React)
-Luci IKEA Dirigera ─────────────────────────► controllo on/off + dimmer
+Sensori IKEA / BME280 ─┐
+Stato AC Panasonic ────┤
+Previsione Open-Meteo ─┼─► Rule Engine ──► comanda gli AC (Cool/Heat/Dry…)
+Presenza FRITZ!Box ────┤      │
+                       │      └─► MPC advisor (predice + consiglia, advisory)
+                       └──────────► Dashboard web (React)  ◄── energia / salute
+Luci IKEA Dirigera ────────────────► on/off + dimmer
+Relè caldaia Sonoff ───────────────► on/off locale (no cloud)
 ```
 
 > ⚠️ Progetto personale, pubblicato a scopo didattico. Dipende da hardware
@@ -52,14 +56,40 @@ Luci IKEA Dirigera ────────────────────�
 
 ### Luci IKEA
 - Controllo **on/off + dimmer** delle luci Dirigera, raggruppate per stanza.
-- **Plafoniere**: più lampadine che formano un'unica plafoniera vengono comandate
-  insieme come un solo controllo (configurabile per stanza).
+- **Punti luce fisici**: più lampadine che formano un unico punto luce (una
+  specchiera, una fila in corridoio) vengono comandate insieme come un solo
+  controllo, configurabile per stanza.
+
+### Energia & costo
+- **Consumo d'impianto** dall'aggregazione mensile del cloud Panasonic (il dato
+  che combacia con l'app ufficiale), suddiviso **per giorno** nel mese corrente,
+  con **costo stimato** dalla tariffa configurata (€/kWh variabile + IVA).
+- Per stanza: **tempo AC, consumo e costo** del giorno, stimati dagli snapshot
+  periodici di stato.
+
+### Caldaia (opzionale, tutto locale)
+- Un relè **Sonoff** a contatto pulito sulla caldaia viene rilevato e comandato
+  **sulla rete locale** (protocollo eWeLink LAN, cifrato AES), **senza cloud**; lo
+  stato è letto passivamente via mDNS. In dashboard compare come una sua stanza.
 
 ### Dashboard web
-- Interfaccia **React** responsive in stile *glassmorphism / iOS*, navigazione
-  per stanza, controllo termostato (modalità, ventola, swing, nanoe™X, Powerful/
-  Quiet), luci, grafici storici di temperatura/umidità, consumi.
-- Servita dallo stesso processo backend, raggiungibile da tutta la rete locale.
+Interfaccia **React** responsive in stile *glassmorphism / iOS*, servita dallo
+stesso backend e raggiungibile da tutta la rete locale.
+
+- **Home** — gauge **comfort** di tutta la casa; card **meteo** estesa (temperatura,
+  percepita, UV, vento, probabilità pioggia, andamento orario da Open-Meteo); card
+  **Home Engine** che mostra la lettura live dell'MPC (casa stabile, comfort %,
+  consumo previsto, prossima decisione, suggerimento); **energia clima** (oggi +
+  mese, costo, grafico giornaliero); **stato impianti** (Home Engine / Panasonic /
+  Dirigera / sensori / Wi-Fi); alert ed eventi recenti in linguaggio leggibile.
+- **Pagine stanza** — termostato completo (modalità, setpoint con gauge della
+  temperatura reale, ventola, swing, nanoe™X, Powerful/Quiet), grafico 24h
+  temperatura + umidità, **ambiente** (temperatura, umidità, comfort, lux),
+  **azioni rapide**, **stato dispositivi/impianti** per stanza, e in fondo tempo
+  AC, consumo e costo del giorno.
+- **Stanze senza AC** mostrano i **controlli luci** (toggle + dimmer), con i punti
+  luce multipli raggruppati in un unico controllo.
+- **Tema chiaro / scuro** (auto su alba/tramonto), responsive fino al mobile.
 
 ---
 
@@ -268,13 +298,24 @@ climate-automation/
 ├── main.py                 # entry point: orchestrazione asyncio + uvicorn
 ├── core/
 │   ├── config.py           # caricamento config tipizzato
-│   ├── rule_engine.py      # cuore: decide e comanda gli AC
+│   ├── rule_engine.py      # cervello reattivo: decide e comanda gli AC
 │   ├── ac_controller.py    # wrapper async Panasonic Comfort Cloud
 │   ├── sensor_poller.py    # lettura sensori IKEA (WebSocket + polling)
+│   ├── remote_sensor_reader.py # sensori HTTP-pull (nodi BME280/BH1750)
 │   ├── season.py           # algoritmo stagionale (media mobile T esterna)
 │   ├── presence.py         # presenza casa/persona via FRITZ!Box
-│   ├── light_controller.py # luci IKEA (+ plafoniere)
-│   └── scheduler.py        # spegnimento forzato notturno
+│   ├── occupancy_model.py  # stima orari di rientro / occupazione
+│   ├── light_controller.py # luci IKEA (+ gruppi)
+│   ├── boiler.py           # relè caldaia Sonoff in LAN (eWeLink)
+│   ├── weather.py          # Open-Meteo: corrente + previsione
+│   ├── energy_history.py   # energia mensile Panasonic → serie giornaliera
+│   ├── scheduler.py        # spegnimento forzato notturno
+│   ├── mpc_advisor.py      # arbitro MPC (advisory): predice + consiglia
+│   ├── mpc_logger.py       # snapshot di stato periodici per l'identificazione
+│   ├── thermal_model.py    # modello RC grey-box della stanza
+│   ├── thermal_calibrator.py # auto-identificazione dai drift naturali
+│   ├── humidity_model.py   # modello psicrometrico dell'umidità
+│   └── psychro.py          # helper psicrometria
 ├── api/                    # FastAPI: routes + modelli
 ├── db/                     # SQLite async (storico, log, comandi)
 ├── dashboard/              # frontend React + Vite + Tailwind
@@ -290,11 +331,16 @@ climate-automation/
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
 | `GET` | `/api/rooms` | stato di tutte le stanze (temp, AC, energia, override) |
+| `GET` | `/api/rooms/{room}/detail` | dati derivati per stanza (comfort, tempo/costo AC oggi, prossima azione) |
 | `GET` | `/api/status` | connessioni, stagione, presenza |
+| `GET` | `/api/overview` | dati derivati home: comfort, salute impianti, Wi-Fi, lettura Home Engine |
 | `POST` | `/api/rooms/{room}/ac/control` | controllo diretto AC (modo/temp/ventola/swing/nanoe/eco) |
 | `GET` | `/api/rooms/{room}/history` | storico letture sensore |
+| `GET` | `/api/weather` | meteo esterno + previsione breve (Open-Meteo) |
+| `GET` | `/api/energy/month` | consumo d'impianto giornaliero + costo del mese |
 | `GET` | `/api/lights` | luci raggruppate per stanza |
-| `POST` | `/api/lights/{id}` | on/off + dimmer di una luce/plafoniera |
+| `POST` | `/api/lights/{id}` | on/off + dimmer di una luce/punto luce |
+| `GET`·`POST` | `/api/boiler` | stato / accensione caldaia (Sonoff LAN) |
 | `GET` | `/api/logs` | log delle decisioni di automazione |
 
 ---

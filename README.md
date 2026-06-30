@@ -20,10 +20,14 @@ Designed to run 24/7 on a **Raspberry Pi**, with no third-party cloud beyond the
 manufacturers' own, and no proprietary apps.
 
 ```
-IKEA Dirigera sensors ──┐
-Panasonic AC state ─────┼──► Rule Engine ──► commands the ACs (Cool/Heat/Dry…)
-FRITZ!Box presence ─────┘                └──► Web dashboard (React)
-IKEA Dirigera lights ───────────────────────► on/off + dimmer control
+IKEA / BME280 sensors ─┐
+Panasonic AC state ────┤
+Open-Meteo forecast ───┼─► Rule Engine ──► commands the ACs (Cool/Heat/Dry…)
+FRITZ!Box presence ────┤      │
+                       │      └─► MPC advisor (predict + recommend, advisory)
+                       └──────────► Web dashboard (React)  ◄── energy / health
+IKEA Dirigera lights ──────────────► on/off + dimmer
+Sonoff boiler relay ───────────────► local on/off (no cloud)
 ```
 
 > ⚠️ Personal project, published for educational purposes. It depends on specific
@@ -63,14 +67,43 @@ IKEA Dirigera lights ───────────────────�
 
 ### IKEA lights
 - **On/off + dimmer** control of Dirigera lights, grouped by room.
-- **Ceiling lights**: multiple bulbs forming a single fixture are controlled
-  together as one control (configurable per room).
+- **Physical fixtures**: multiple bulbs forming a single light point (a mirror
+  light, a hallway run) are controlled together as one control, configurable per
+  room.
+
+### Energy & cost
+- **Whole-plant consumption** from the Panasonic cloud's monthly aggregation (the
+  figure that matches the official app), broken down **per day** for the current
+  month, with **estimated cost** from your configured tariff (variable €/kWh + VAT).
+- Per-room **AC runtime, consumption and cost** for the day, estimated from the
+  periodic state snapshots.
+
+### Boiler (optional, fully local)
+- A **Sonoff** dry-contact relay on the boiler is detected and controlled **on the
+  local network** (eWeLink LAN protocol, AES-encrypted), with **no cloud**; its
+  state is read passively via mDNS. Surfaced in the dashboard as its own room.
 
 ### Web dashboard
-- A responsive **React** interface in *glassmorphism / iOS* style, room-by-room
-  navigation, thermostat control (mode, fan, swing, nanoe™X, Powerful/Quiet),
-  lights, temperature/humidity history charts, energy consumption.
-- Served by the same backend process, reachable from the whole local network.
+A responsive **React** interface in *glassmorphism / iOS* style, served by the
+same backend process and reachable from the whole local network.
+
+- **Home overview** — a whole-house **comfort gauge**; an extended outdoor
+  **weather** card (temperature, feels-like, UV, wind, rain probability, hourly
+  trend, all from Open-Meteo); a **Home Engine** card that surfaces the MPC's live
+  read (house stability, comfort %, projected consumption, next decision,
+  suggestion); **climate energy** (today + month, estimated cost, daily chart);
+  **plant health** (Home Engine / Panasonic / Dirigera / sensors / Wi-Fi);
+  alerts and a recent-events feed (human-readable, e.g. *"Cooling to 22°"*).
+- **Per-room pages** — full thermostat (mode, setpoint with a live real-temperature
+  gauge, fan, swing, nanoe™X, Powerful/Quiet), a 24-hour temperature + humidity
+  chart, room **environment** (temperature, humidity, comfort, lux), **quick
+  actions**, per-room **device & system health**, and a footer with the day's AC
+  runtime, consumption and cost.
+- **Light-only rooms** (no AC) show their **light controls** instead (toggle +
+  dimmer), with multiple bulbs grouped into a single physical fixture where it
+  makes sense (e.g. a bathroom mirror light, a hallway run).
+- **Light / dark theme** (auto by sunrise/sunset), top-bar quick stats, responsive
+  down to mobile.
 
 ---
 
@@ -278,13 +311,24 @@ climate-automation/
 ├── main.py                 # entry point: asyncio orchestration + uvicorn
 ├── core/
 │   ├── config.py           # typed config loading
-│   ├── rule_engine.py      # the brain: decides and commands the ACs
+│   ├── rule_engine.py      # the reactive brain: decides and commands the ACs
 │   ├── ac_controller.py    # async wrapper over Panasonic Comfort Cloud
 │   ├── sensor_poller.py    # IKEA sensor reading (WebSocket + polling)
+│   ├── remote_sensor_reader.py # HTTP-pull sensors (BME280/BH1750 nodes)
 │   ├── season.py           # season algorithm (outdoor temp moving average)
 │   ├── presence.py         # home/person presence via FRITZ!Box
-│   ├── light_controller.py # IKEA lights (+ ceiling fixtures)
-│   └── scheduler.py        # nightly forced off
+│   ├── occupancy_model.py  # arrival-time / occupancy estimation
+│   ├── light_controller.py # IKEA lights (+ grouped fixtures)
+│   ├── boiler.py           # Sonoff boiler relay over the LAN (eWeLink)
+│   ├── weather.py          # Open-Meteo current + forecast
+│   ├── energy_history.py   # Panasonic monthly energy → daily series
+│   ├── scheduler.py        # nightly forced off
+│   ├── mpc_advisor.py      # MPC arbiter (advisory): predict + recommend
+│   ├── mpc_logger.py       # periodic state snapshots for identification
+│   ├── thermal_model.py    # grey-box RC room model
+│   ├── thermal_calibrator.py # self-identification from natural drifts
+│   ├── humidity_model.py   # psychrometric humidity model
+│   └── psychro.py          # psychrometrics helpers
 ├── api/                    # FastAPI: routes + models
 ├── db/                     # async SQLite (history, logs, commands)
 ├── dashboard/              # React + Vite + Tailwind frontend
@@ -300,11 +344,16 @@ climate-automation/
 | Method | Endpoint | Description |
 |---|---|---|
 | `GET` | `/api/rooms` | state of all rooms (temp, AC, energy, override) |
+| `GET` | `/api/rooms/{room}/detail` | per-room derived data (comfort, AC runtime/cost today, next action) |
 | `GET` | `/api/status` | connections, season, presence |
+| `GET` | `/api/overview` | derived home data: comfort score, plant health, Wi-Fi, Home Engine read |
 | `POST` | `/api/rooms/{room}/ac/control` | direct AC control (mode/temp/fan/swing/nanoe/eco) |
 | `GET` | `/api/rooms/{room}/history` | sensor reading history |
+| `GET` | `/api/weather` | outdoor weather + short forecast (Open-Meteo) |
+| `GET` | `/api/energy/month` | per-day plant consumption + cost for the month |
 | `GET` | `/api/lights` | lights grouped by room |
 | `POST` | `/api/lights/{id}` | on/off + dimmer of a light/fixture |
+| `GET`·`POST` | `/api/boiler` | boiler state / on-off (Sonoff LAN) |
 | `GET` | `/api/logs` | automation decision logs |
 
 ---
