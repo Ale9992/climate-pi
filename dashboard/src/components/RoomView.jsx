@@ -19,6 +19,10 @@ const LIGHT_GROUPS = {
     { name: 'Specchiera', members: ['Luce 10', 'Luce 11'], icon: mdiMirror },
     { name: 'Plafoniera', members: ['Luce 12'], icon: mdiCeilingLight, ceiling: true },
   ],
+  // Corridoio: le 3 luci sono un unico punto luce -> un solo controllo.
+  Corridoio: [
+    { name: 'Corridoio', members: ['Luce 7', 'Luce 8', 'Luce 9'], icon: mdiCeilingLight, ceiling: true },
+  ],
 }
 
 const TMIN = 16, TMAX = 30
