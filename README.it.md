@@ -93,6 +93,20 @@ stesso backend e raggiungibile da tutta la rete locale.
 
 ---
 
+## 📸 Screenshot
+
+**Home** — gauge comfort, meteo esterno, la lettura live dell'MPC (*Home Engine*),
+energia, stato impianti, alert ed eventi recenti.
+
+![Dashboard home](docs/screenshot-home.png)
+
+**Pagina stanza** — termostato con gauge della temperatura reale, ambiente, stato
+impianti, azioni rapide e in fondo tempo/consumo/costo AC del giorno.
+
+![Pagina stanza](docs/screenshot-room.png)
+
+---
+
 ## 🧠 Controllo predittivo (MPC) — **beta, in sviluppo attivo**
 
 Sopra al rule engine reattivo si sta costruendo uno strato a **Model Predictive

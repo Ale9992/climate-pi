@@ -35,6 +35,20 @@ Sonoff boiler relay ───────────────► local on/of
 
 ---
 
+## 📸 Screenshots
+
+**Home overview** — comfort gauge, outdoor weather, the MPC's live read (*Home
+Engine*), energy, plant health, alerts and recent events.
+
+![Home dashboard](docs/screenshot-home.png)
+
+**Per-room page** — thermostat with a live real-temperature gauge, environment,
+system health, quick actions and the day's runtime/consumption/cost.
+
+![Room page](docs/screenshot-room.png)
+
+---
+
 ## ✨ Features
 
 ### Smart climate automation
