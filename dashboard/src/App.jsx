@@ -900,13 +900,11 @@ export default function App() {
                 {section === 'room' && <Icon path={mdiChevronDown} size={0.7} />}
               </div>
               <div className="welcome-sub">
-                {section === 'room'
-                  ? <>Ultimo aggiornamento: {lastRefresh ? relTime(lastRefresh, now) : '—'} <span className="live-dot" /></>
-                  : `${dateStr} · ${hh}:${mm}`}
+                Ultimo aggiornamento: {lastRefresh ? relTime(lastRefresh, now) : '—'} <span className="live-dot" />
               </div>
             </div>
           </div>
-          {section === 'room' && (
+          {(
             <div className="topbar-chips">
               <div className="tb-chip tb-chip-date"><span className="tbc-date">{dateStr}</span><span className="tbc-time">{hh}:{mm}</span></div>
               <div className="tb-chip"><span className="tbc-ic" style={{ color: sm.tint }}><Icon path={sm.icon} size={0.78} /></span><div><div className="tbc-val">{sm.label}</div><div className="tbc-lbl">Esterno {status.outdoor_avg_temperature != null ? `${status.outdoor_avg_temperature}°` : '—'}</div></div></div>
