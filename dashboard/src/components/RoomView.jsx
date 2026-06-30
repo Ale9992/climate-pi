@@ -7,8 +7,19 @@ import {
   mdiHomeThermometerOutline, mdiBrain, mdiServerNetwork, mdiChip, mdiRadiatorDisabled,
   mdiArrowOscillating, mdiLockOutline, mdiCalendarClock, mdiAirConditioner, mdiHubOutline,
   mdiClockOutline, mdiAccountOutline, mdiCurrencyEur, mdiRefresh, mdiAccountGroup,
+  mdiWaterBoiler, mdiMirror, mdiCeilingLight,
 } from '@mdi/js'
 import { api } from '../api.js'
+import RoomLights from './RoomLights.jsx'
+
+// Raggruppamento luci per stanza (punti luce fisici reali).
+// Bagno: Luce 10 + Luce 11 = la specchiera (un unico punto luce); Luce 12 = plafoniera.
+const LIGHT_GROUPS = {
+  Bagno: [
+    { name: 'Specchiera', members: ['Luce 10', 'Luce 11'], icon: mdiMirror },
+    { name: 'Plafoniera', members: ['Luce 12'], icon: mdiCeilingLight, ceiling: true },
+  ],
+}
 
 const TMIN = 16, TMAX = 30
 const MODES = [
@@ -287,7 +298,28 @@ function DeviceList({ room, overview, now }) {
   )
 }
 
-export default function RoomView({ room, status, overview, energy, now, dateStr, hh, mm, season, onBack, onAction }) {
+// ---- Caldaia (relè LAN) — per la stanza Cucina
+function BoilerControl({ boiler, onToggle, now }) {
+  const [busy, setBusy] = useState(false)
+  const on = boiler?.on
+  const click = async () => { setBusy(true); try { await onToggle(!on) } finally { setBusy(false) } }
+  return (
+    <div className="card rv-boiler">
+      <div className="rv-card-head"><span className="rv-h-ic red"><Icon path={mdiWaterBoiler} size={0.8} /></span><h3>Caldaia</h3></div>
+      <div className={`rv-boiler-state ${on ? 'on' : ''}`}>
+        <Icon path={mdiWaterBoiler} size={1.6} />
+        <strong>{on == null ? '—' : on ? 'Accesa' : 'Spenta'}</strong>
+        <span>relè in rete locale{boiler?.age_seconds != null ? ` · letto ${relTime(new Date(now - boiler.age_seconds * 1000), now)}` : ''}</span>
+      </div>
+      <button className={`rv-boiler-btn ${on ? 'on' : ''}`} onClick={click} disabled={busy || on == null}>
+        {busy ? '…' : on ? 'Spegni' : 'Accendi'}
+      </button>
+      <p className="rv-boiler-note">Comandata anche dal cronotermostato (S1/S2)</p>
+    </div>
+  )
+}
+
+export default function RoomView({ room, status, overview, energy, now, dateStr, hh, mm, season, lights, boiler, onToggleBoiler, onBack, onAction }) {
   const [detail, setDetail] = useState({})
   const [history, setHistory] = useState([])
   const load = useCallback(async () => {
@@ -310,6 +342,39 @@ export default function RoomView({ room, status, overview, energy, now, dateStr,
     { icon: mdiLightningBolt, tint: '#e8b53f', val: `${(energy?.today_kwh ?? 0).toFixed(2)} kWh`, lbl: 'Consumo oggi' },
     { icon: mdiAccountGroup, tint: '#2f9e8f', val: status?.presence_home ? 'In casa' : 'Fuori', lbl: detail.people != null ? `${detail.people} persone` : 'presenza' },
   ]
+  const topBar = (
+    <div className="rv-top">
+      {topChips.map((c, i) => c.date ? (
+        <div key={i} className="rv-chip rv-chip-date"><span className="rv-cd-date">{dateStr}</span><span className="rv-cd-time">{hh}:{mm}</span></div>
+      ) : (
+        <div key={i} className="rv-chip">
+          <span className="rv-chip-ic" style={{ color: c.tint }}><Icon path={c.icon} size={0.8} /></span>
+          <div><div className="rv-chip-val">{c.val}</div><div className="rv-chip-lbl">{c.lbl}</div></div>
+        </div>
+      ))}
+    </div>
+  )
+
+  // Stanza SENZA clima (Cucina/Corridoio/Bagno): niente sensori ambiente,
+  // mostra i controlli luci (+ caldaia in Cucina) e lo stato impianti.
+  if (!ac) {
+    return (
+      <div className="rv">
+        {topBar}
+        <div className="rv-light-grid">
+          <div className="card rv-lights">
+            <div className="rv-card-head"><span className="rv-h-ic amber"><Icon path={mdiLightbulbVariant} size={0.8} /></span><h3>Luci · {room.name}</h3></div>
+            <RoomLights room={room.name} lights={lights} groups={LIGHT_GROUPS[room.name]} onChange={() => { onAction && onAction(); load() }} />
+          </div>
+          <div className="rv-light-side">
+            {boiler?.enabled && <BoilerControl boiler={boiler} onToggle={onToggleBoiler} now={now} />}
+            <SystemPanel overview={overview} room={room} now={now} onRefresh={() => { onAction && onAction(); load() }} />
+          </div>
+        </div>
+      </div>
+    )
+  }
+
   const bottom = [
     { icon: mdiClockOutline, lbl: 'Prossima azione programmata', val: detail.next_action ? `${detail.next_action.label.replace(' programmato', '')} alle ${detail.next_action.time}` : '—' },
     { icon: mdiAccountOutline, lbl: 'Presenza rilevata', val: status?.presence_home ? `${detail.people ?? '—'} in casa` : 'Nessuno' },
@@ -319,16 +384,7 @@ export default function RoomView({ room, status, overview, energy, now, dateStr,
   ]
   return (
     <div className="rv">
-      <div className="rv-top">
-        {topChips.map((c, i) => c.date ? (
-          <div key={i} className="rv-chip rv-chip-date"><span className="rv-cd-date">{dateStr}</span><span className="rv-cd-time">{hh}:{mm}</span></div>
-        ) : (
-          <div key={i} className="rv-chip">
-            <span className="rv-chip-ic" style={{ color: c.tint }}><Icon path={c.icon} size={0.8} /></span>
-            <div><div className="rv-chip-val">{c.val}</div><div className="rv-chip-lbl">{c.lbl}</div></div>
-          </div>
-        ))}
-      </div>
+      {topBar}
 
       <div className="rv-top-grid">
         {ac ? <div className="rv-a-clima"><ClimateControl room={room} onAction={() => { onAction && onAction(); load() }} /></div> : <div className="rv-a-clima" />}
