@@ -4419,3 +4419,27 @@ body { background:
   .rv-clima-top { grid-template-columns: 1fr; justify-items: center; gap: 14px; }
   .rv-modeinfo { justify-self: center; flex-direction: row; gap: 28px; }
 }
+
+/* --- Stanza SENZA clima: vista luci + caldaia ---------------------------- */
+.rv-h-ic.amber { background: color-mix(in srgb, #e8893f 16%, transparent); color: #d9772f; }
+.rv-h-ic.red { background: color-mix(in srgb, #e5484d 14%, transparent); color: #d23b40; }
+.rv-light-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 16px; align-items: start; }
+.rv-light-side { display: flex; flex-direction: column; gap: 16px; }
+/* RoomLights e' gia' una card: dentro rv-lights tolgo il suo contenitore per non raddoppiare */
+.rv-lights .lights-card { background: transparent; border: none; box-shadow: none; padding: 0; }
+/* tile a 2 colonne piene (niente colonne vuote auto-fill) + slider contenuto
+   (min-width:0 fa restringere il range input cosi' il "%" non esce dalla tile) */
+.rv-lights .lc-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.rv-lights .lt-dim { min-width: 0; }
+.rv-lights .lt-dim input[type="range"] { min-width: 0; width: 100%; }
+.rv-boiler-state { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 16px 0; }
+.rv-boiler-state svg { color: var(--muted); }
+.rv-boiler-state.on svg { color: #d23b40; }
+.rv-boiler-state strong { font-size: 1.3rem; font-weight: 800; color: var(--ink); }
+.rv-boiler-state span { font-size: 0.72rem; color: var(--muted); text-align: center; }
+.rv-boiler-btn { width: 100%; padding: 12px; border-radius: 14px; border: 1px solid var(--glass-border);
+  background: var(--glass-strong); color: var(--ink); font-weight: 700; cursor: pointer; }
+.rv-boiler-btn.on { background: color-mix(in srgb, #e5484d 16%, transparent); border-color: #e5484d; color: #c0392b; }
+.rv-boiler-btn:disabled { opacity: 0.5; }
+.rv-boiler-note { font-size: 0.7rem; color: var(--muted); text-align: center; margin: 8px 0 0; }
+@media (max-width: 760px) { .rv-light-grid { grid-template-columns: 1fr; } }
